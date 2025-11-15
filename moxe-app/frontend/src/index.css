@@ -1,0 +1,112 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary: #6a11cb;
+  --primary-dark: #5a0db5;
+  --primary-light: #8a3ffc;
+  --secondary: #2575fc;
+  --accent: #ff4d8d;
+  --success: #00c853;
+  --warning: #ffab00;
+  --danger: #ff5252;
+  --dislike: #4a5568;
+  --sos-red: #e74c3c;
+  --sos-dark: #c0392b;
+  --dark: #121212;
+  --dark-gray: #1e1e1e;
+  --medium-gray: #2d2d2d;
+  --light-gray: #3a3a3a;
+  --text-light: #f0f0f0;
+  --text-gray: #a0a0a0;
+  --card-bg: rgba(255, 255, 255, 0.05);
+  --radius: 16px;
+  --radius-sm: 8px;
+  --shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  --transition: all 0.3s ease;
+}
+
+@keyframes sos-pulse {
+  0% { transform: scale(1); box-shadow: 0 4px 15px rgba(231, 76, 60, 0.5); }
+  50% { transform: scale(1.05); box-shadow: 0 4px 20px rgba(231, 76, 60, 0.7); }
+  100% { transform: scale(1); box-shadow: 0 4px 15px rgba(231, 76, 60, 0.5); }
+}
+
+@keyframes sos-active-pulse {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.7); }
+  70% { transform: scale(1.05); box-shadow: 0 0 0 15px rgba(231, 76, 60, 0); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(231, 76, 60, 0); }
+}
+
+@keyframes slideIn {
+  from { top: -100px; opacity: 0; }
+  to { top: 80px; opacity: 1; }
+}
+
+@keyframes modalAppear {
+  from { transform: scale(0.8); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+:root {
+  --primary: #6a11cb;
+  --primary-dark: #5a0db5;
+  --primary-light: #8a3ffc;
+  --secondary: #2575fc;
+  --accent: #ff4d8d;
+  --success: #00c853;
+  --warning: #ffab00;
+  --danger: #ff5252;
+  --dark: #121212;
+  --dark-gray: #1e1e1e;
+  --medium-gray: #2d2d2d;
+  --light-gray: #3a3a3a;
+  --text-light: #f0f0f0;
+  --text-gray: #a0a0a0;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background-color: var(--dark);
+  color: var(--text-light);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+/* Leaflet map styles */
+.leaflet-container {
+  background: var(--dark-gray);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--dark-gray);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--light-gray);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--medium-gray);
+}
+
+
