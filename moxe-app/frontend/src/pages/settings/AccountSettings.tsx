@@ -139,6 +139,27 @@ export default function AccountSettings() {
         </div>
       )}
 
+      {/* User ID */}
+      <div className="bg-medium-gray rounded-2xl p-4 space-y-3">
+        <h2 className="text-lg font-semibold text-white">User ID</h2>
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            value={user?._id || ''}
+            readOnly
+            className="flex-1 bg-dark-gray border-none rounded-lg px-4 py-2.5 text-white placeholder-text-gray opacity-90"
+          />
+          <button
+            onClick={() => user?._id && navigator.clipboard.writeText(user._id)}
+            className="bg-light-gray hover:bg-dark-gray text-white px-3 py-2 rounded-lg"
+            title="Copy User ID"
+          >
+            <i className="fas fa-copy"></i>
+          </button>
+        </div>
+        <p className="text-xs text-text-gray">Share this ID with support if needed.</p>
+      </div>
+
       {/* Email Section */}
       <div className="bg-medium-gray rounded-2xl p-4 space-y-4">
         <h2 className="text-lg font-semibold text-white">Email Address</h2>

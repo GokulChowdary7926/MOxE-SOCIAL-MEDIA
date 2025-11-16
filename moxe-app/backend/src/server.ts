@@ -77,6 +77,10 @@ import lifestyleRoutes from './routes/lifestyle'
 import dsrRoutes from './routes/dsr'
 import discoverRoutes from './routes/discover'
 import notificationRoutes from './routes/notifications'
+import storeRoutes from './routes/store'
+import collectionRoutes from './routes/collections'
+import subscriptionRoutes from './routes/subscription'
+import usernameRoutes from './routes/username'
 
 app.use('/api/auth', authRoutes)
 app.use('/api/users', userRoutes)
@@ -91,6 +95,10 @@ app.use('/api/lifestyle', lifestyleRoutes)
 app.use('/api/dsr', dsrRoutes)
 app.use('/api/discover', discoverRoutes)
 app.use('/api/notifications', notificationRoutes)
+app.use('/api/store', storeRoutes)
+app.use('/api/collections', collectionRoutes)
+app.use('/api/subscription', subscriptionRoutes)
+app.use('/api/username', usernameRoutes)
 
 // Setup Socket.io
 setupSocketIO(io)
@@ -123,3 +131,4 @@ process.on('SIGINT', () => {
     process.exit(0)
   })
 })
+

@@ -115,10 +115,10 @@ export default function VoiceCommands({ onCommand }: VoiceCommandsProps) {
   return (
     <button
       onClick={isListening ? stopListening : startListening}
-      className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-all touch-manipulation ${
+      className={`w-8 h-8 rounded-full flex items-center justify-center transition-all touch-manipulation ${
         isListening
           ? 'bg-danger animate-pulse'
-          : 'bg-primary active:bg-primary-dark'
+          : 'bg-transparent active:bg-light-gray/20'
       }`}
       aria-label={isListening ? 'Stop listening' : 'Start voice command'}
       style={{ 
@@ -126,7 +126,7 @@ export default function VoiceCommands({ onCommand }: VoiceCommandsProps) {
         touchAction: 'manipulation',
       }}
     >
-      <i className={`fas fa-${isListening ? 'stop' : 'microphone'} text-white text-base`}></i>
+      <i className={`fas fa-${isListening ? 'stop' : 'microphone'} text-text-gray text-sm`}></i>
     </button>
   )
 }

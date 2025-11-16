@@ -3,7 +3,6 @@ import { useDispatch, useSelector } from 'react-redux'
 import { AppDispatch, RootState } from '../store'
 import { fetchFeed, addPost } from '../store/slices/postSlice'
 import Stories from '../components/feed/Stories'
-import CreatePost from '../components/feed/CreatePost'
 import Post from '../components/feed/Post'
 import Reel from '../components/feed/Reel'
 import LiveStream from '../components/feed/LiveStream'
@@ -142,11 +141,6 @@ export default function Home() {
     <div className="pb-20 bg-dark-gray min-h-screen">
       {/* Stories Section */}
       <Stories stories={stories} />
-
-      {/* Create Post Button */}
-      <div className="px-4 py-3">
-        <CreatePost />
-      </div>
 
       {/* Live Streams */}
       {liveStreams.length > 0 && (

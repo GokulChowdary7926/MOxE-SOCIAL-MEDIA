@@ -38,6 +38,9 @@ export default function PrivacySettings() {
   const { user } = useSelector((state: RootState) => state.auth)
   const [isLoading, setIsLoading] = useState(false)
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
+  const [closeFriends, setCloseFriends] = useState<any[]>([])
+  const [cfSearch, setCfSearch] = useState('')
+  const [cfResults, setCfResults] = useState<any[]>([])
   const [settings, setSettings] = useState({
     profileVisibility: 'public',
     whoCanSeePosts: 'all',
@@ -51,6 +54,7 @@ export default function PrivacySettings() {
 
   useEffect(() => {
     loadSettings()
+    loadCloseFriends()
   }, [])
 
   const loadSettings = async () => {
@@ -70,6 +74,46 @@ export default function PrivacySettings() {
       }
     } catch (error) {
       console.error('Failed to load privacy settings:', error)
+    }
+  }
+
+  const loadCloseFriends = async () => {
+    try {
+      const response = await api.get('/users/close-friends')
+      setCloseFriends(response.data.closeFriends || [])
+    } catch (error) {
+      console.error('Failed to load close friends:', error)
+    }
+  }
+
+  const handleCfSearch = async () => {
+    if (!cfSearch.trim()) return
+    try {
+      const response = await api.get(`/users/search?q=${encodeURIComponent(cfSearch)}`)
+      setCfResults(response.data.users || [])
+    } catch (error) {
+      console.error('Failed to search users:', error)
+      setCfResults([])
+    }
+  }
+
+  const addCf = async (userId: string) => {
+    try {
+      await api.post('/users/close-friends', { userId })
+      await loadCloseFriends()
+      setCfSearch('')
+      setCfResults([])
+    } catch (error) {
+      console.error('Failed to add close friend:', error)
+    }
+  }
+
+  const removeCf = async (userId: string) => {
+    try {
+      await api.delete(`/users/close-friends/${userId}`)
+      await loadCloseFriends()
+    } catch (error) {
+      console.error('Failed to remove close friend:', error)
     }
   }
 
@@ -102,6 +146,77 @@ export default function PrivacySettings() {
         <div>
           <h1 className="text-xl font-bold text-white">Privacy Settings</h1>
           <p className="text-sm text-text-gray">Control who can see your content</p>
+        </div>
+      </div>
+
+      {/* Close Friends Manager */}
+      <div className="bg-medium-gray rounded-2xl p-4 space-y-4">
+        <h2 className="text-lg font-semibold text-white">Close Friends</h2>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={cfSearch}
+            onChange={(e) => setCfSearch(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && handleCfSearch()}
+            placeholder="Search users to add..."
+            className="flex-1 bg-dark-gray border-none rounded-lg px-4 py-2.5 text-white placeholder-text-gray focus:outline-none focus:ring-2 focus:ring-primary"
+          />
+          <button
+            onClick={handleCfSearch}
+            className="bg-primary text-white px-3 rounded-lg hover:bg-primary-dark transition-colors"
+          >
+            <i className="fas fa-search"></i>
+          </button>
+        </div>
+        {cfResults.length > 0 && (
+          <div className="bg-dark-gray rounded-lg p-2 max-h-40 overflow-y-auto space-y-2">
+            {cfResults.map((u: any) => (
+              <button
+                key={u._id}
+                onClick={() => addCf(u._id)}
+                className="w-full flex items-center justify-between p-2 rounded-lg hover:bg-light-gray/20 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center">
+                    {u.profile?.fullName?.charAt(0) || 'U'}
+                  </div>
+                  <div className="text-left">
+                    <div className="text-white text-sm">{u.profile?.fullName}</div>
+                    <div className="text-xs text-text-gray">@{u.profile?.username}</div>
+                  </div>
+                </div>
+                <span className="text-primary text-sm font-semibold">Add</span>
+              </button>
+            ))}
+          </div>
+        )}
+        <div>
+          <p className="text-text-gray text-xs mb-2">Your Close Friends ({closeFriends.length})</p>
+          {closeFriends.length > 0 ? (
+            <div className="space-y-2">
+              {closeFriends.map((cf: any) => (
+                <div key={cf._id} className="flex items-center justify-between bg-dark-gray p-2 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-secondary text-white flex items-center justify-center text-sm font-bold">
+                      {cf.profile?.fullName?.charAt(0) || 'U'}
+                    </div>
+                    <div>
+                      <div className="text-white text-sm">{cf.profile?.fullName}</div>
+                      <div className="text-xs text-text-gray">@{cf.profile?.username}</div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => removeCf(cf._id)}
+                    className="text-danger hover:text-red-400 text-sm"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-xs text-text-gray">No close friends yet.</div>
+          )}
         </div>
       </div>
 

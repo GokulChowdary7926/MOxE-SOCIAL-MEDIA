@@ -5,6 +5,7 @@ import { AppDispatch, RootState } from '../../store'
 import { requestOTP, setPhoneNumber } from '../../store/slices/authSlice'
 
 export default function Login() {
+  const [countryCode, setCountryCode] = useState('+91')
   const [phone, setPhone] = useState('')
   const dispatch = useDispatch<AppDispatch>()
   const navigate = useNavigate()
@@ -25,8 +26,9 @@ export default function Login() {
     }
 
     try {
-      const result = await dispatch(requestOTP(cleaned)).unwrap()
-      dispatch(setPhoneNumber(cleaned))
+      const fullPhone = `${countryCode}${cleaned}`
+      const result = await dispatch(requestOTP(fullPhone)).unwrap()
+      dispatch(setPhoneNumber(fullPhone))
       
       // If OTP is returned (development mode), show it to user
       if (result.otp) {
@@ -52,7 +54,7 @@ export default function Login() {
           <p className="text-text-gray">Privacy-first social platform</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-medium-gray rounded-2xl p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="bg-medium-gray rounded-2xl p-6 space-y-4 shadow-lg shadow-black/20">
           {error && (
             <div className="bg-danger/20 border border-danger text-danger p-3 rounded-lg text-sm">
               {error}
@@ -63,15 +65,33 @@ export default function Login() {
             <label htmlFor="phone" className="block text-sm font-medium mb-2">
               Phone Number
             </label>
-            <input
-              type="tel"
-              id="phone"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="Enter your phone number"
-              className="w-full bg-light-gray border-none rounded-lg px-4 py-3 text-white placeholder-text-gray focus:outline-none focus:ring-2 focus:ring-primary"
-              required
-            />
+            <div className="flex gap-2">
+              <select
+                aria-label="Country code"
+                value={countryCode}
+                onChange={(e) => setCountryCode(e.target.value)}
+                className="w-28 bg-light-gray border-none rounded-lg px-3 py-3 text-white focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                <option value="+91">+91</option>
+                <option value="+1">+1</option>
+                <option value="+44">+44</option>
+                <option value="+61">+61</option>
+              </select>
+              <input
+                type="tel"
+                id="phone"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="Phone number"
+                className="flex-1 bg-light-gray border-none rounded-lg px-4 py-3 text-white placeholder-text-gray focus:outline-none focus:ring-2 focus:ring-primary"
+                required
+                inputMode="numeric"
+                autoComplete="tel"
+              />
+            </div>
+            <p className="text-xs text-text-gray mt-1">
+              Sign in with phone + OTP. Up to 2 accounts per phone number.
+            </p>
           </div>
 
           <button
@@ -92,10 +112,14 @@ export default function Login() {
               Sign up
             </button>
           </p>
+          <p className="text-center text-xs text-text-gray/70">
+            By continuing, you agree to our Terms & Privacy Policy.
+          </p>
         </form>
       </div>
     </div>
   )
 }
+
 
 

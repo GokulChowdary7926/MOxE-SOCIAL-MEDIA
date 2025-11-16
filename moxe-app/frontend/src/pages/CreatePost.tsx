@@ -20,6 +20,7 @@ export default function CreatePost() {
   const [mentions] = useState<string[]>([]) // Reserved for future mention functionality
   const [isLoading, setIsLoading] = useState(false)
   const [mediaFiles, setMediaFiles] = useState<File[]>([])
+  const [shareStoryToCloseFriends, setShareStoryToCloseFriends] = useState(false)
 
   // Load default content settings
   useEffect(() => {
@@ -54,6 +55,11 @@ export default function CreatePost() {
         contentType === 'live' ? contentSettings.live?.defaultVisibility || 'all' :
         'all'
       setVisibility(defaultVisibility)
+      if (contentType === 'story') {
+        setShareStoryToCloseFriends(defaultVisibility === 'close_friends')
+      } else {
+        setShareStoryToCloseFriends(false)
+      }
     }
   }, [contentType, contentSettings])
 
@@ -419,7 +425,36 @@ export default function CreatePost() {
                 💎 Thick
               </button>
             </div>
+            {contentType === 'story' && (
+              <div className="ml-auto flex items-center gap-2 bg-light-gray/20 px-3 py-1.5 rounded-lg">
+                <span className="text-xs text-text-gray">Share to Close Friends</span>
+                <label className="relative inline-block w-12 h-6">
+                  <input
+                    type="checkbox"
+                    checked={shareStoryToCloseFriends}
+                    onChange={(e) => {
+                      const val = e.target.checked
+                      setShareStoryToCloseFriends(val)
+                      setVisibility(val ? 'close_friends' : (contentSettings?.stories?.defaultVisibility || 'all'))
+                      // Persist as default in user content settings
+                      try {
+                        api.patch('/users/settings', { contentSettings: { stories: { defaultVisibility: val ? 'close_friends' : 'all' } } })
+                      } catch {}
+                    }}
+                    className="opacity-0 w-0 h-0"
+                  />
+                  <span className={`absolute cursor-pointer top-0 left-0 right-0 bottom-0 rounded-full transition-colors before:absolute before:content-[''] before:h-4 before:w-4 before:left-1 before:bottom-1 before:bg-white before:rounded-full before:transition-transform ${
+                    shareStoryToCloseFriends ? 'bg-primary before:translate-x-6' : 'bg-light-gray'
+                  }`}></span>
+                </label>
+              </div>
+            )}
           </div>
+          {contentType === 'story' && visibility === 'close_friends' && (
+            <div className="mt-2 flex items-center gap-2 text-xs">
+              <span className="px-2 py-1 rounded-full bg-primary/20 text-primary">Close Friends default active</span>
+            </div>
+          )}
 
           {/* Caption Textarea */}
           <textarea
@@ -556,4 +591,5 @@ export default function CreatePost() {
     </div>
   )
 }
+
 

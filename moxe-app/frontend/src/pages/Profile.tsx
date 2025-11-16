@@ -3,7 +3,8 @@ import { useDispatch, useSelector } from 'react-redux'
 import { useNavigate, useParams } from 'react-router-dom'
 import { AppDispatch, RootState } from '../store'
 import { fetchProfile } from '../store/slices/userSlice'
-import api from '../services/api'
+import QRModal from '../components/common/QRModal'
+import api, { collectionsAPI } from '../services/api'
 
 export default function Profile() {
   const dispatch = useDispatch<AppDispatch>()
@@ -15,9 +16,10 @@ export default function Profile() {
   const [userPosts, setUserPosts] = useState<any[]>([])
   const [reels, setReels] = useState<any[]>([])
   const [savedPosts, setSavedPosts] = useState<any[]>([])
-  const [collections] = useState<any[]>([])
+  const [collections, setCollections] = useState<any[]>([])
   const [taggedPosts, setTaggedPosts] = useState<any[]>([])
   const [viewedUser, setViewedUser] = useState<any>(null)
+  const [showQR, setShowQR] = useState(false)
 
   const displayUser = viewedUser || profile || user
   
@@ -37,6 +39,7 @@ export default function Profile() {
     loadReels()
     loadSavedPosts()
     loadTaggedPosts()
+    loadCollections()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dispatch, userId, currentUserId])
 
@@ -127,6 +130,21 @@ export default function Profile() {
     }
   }
 
+  const loadCollections = async () => {
+    try {
+      // Collections are only for own profile
+      if (isOwnProfile) {
+        const response = await collectionsAPI.list().catch(() => ({ data: { collections: [] } }))
+        setCollections(response.data.collections || [])
+      } else {
+        setCollections([])
+      }
+    } catch (error) {
+      console.error('Failed to load collections:', error)
+      setCollections([])
+    }
+  }
+
   // Mock data for profile details
   const profileDetails = {
     location: displayUser?.profile?.location || 'San Francisco',
@@ -148,7 +166,22 @@ export default function Profile() {
         <button onClick={() => navigate(-1)} className="text-white">
           <i className="fas fa-arrow-left text-xl"></i>
         </button>
-        <div className="w-6"></div> {/* Spacer for centering */}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => navigate('/qr/scan')}
+            className="text-white"
+            aria-label="Open QR scanner"
+          >
+            <i className="fas fa-camera text-xl"></i>
+          </button>
+          <button
+            onClick={() => setShowQR(true)}
+            className="text-white"
+            aria-label="Show profile QR"
+          >
+            <i className="fas fa-qrcode text-xl"></i>
+          </button>
+        </div>
       </div>
 
       {/* Profile Header */}
@@ -175,6 +208,21 @@ export default function Profile() {
             <p className="text-sm text-text-gray">
               {displayUser?.profile?.bio || 'Futuristic dreamer'}
             </p>
+            {displayUser?._id && (
+              <div className="mt-2 inline-flex items-center gap-2 bg-dark-gray px-2.5 py-1.5 rounded-lg">
+                <span className="text-xs text-text-gray">ID:</span>
+                <span className="text-xs text-white font-mono">{displayUser._id}</span>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(displayUser._id)
+                  }}
+                  className="text-xs text-primary-light hover:text-primary"
+                  title="Copy User ID"
+                >
+                  <i className="fas fa-copy"></i>
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -404,6 +452,31 @@ export default function Profile() {
                   <div className="absolute top-2 right-2">
                     <i className="fas fa-bookmark text-primary-light"></i>
                   </div>
+                  {/* Add to Collection quick action */}
+                  <button
+                    onClick={async (e) => {
+                      e.stopPropagation()
+                      try {
+                        const listRes = await collectionsAPI.list().catch(() => ({ data: { collections: [] } }))
+                        const names = (listRes.data.collections || []).map((c: any) => c.name).join(', ')
+                        const name = prompt(`Add to collection:\n(Existing: ${names || 'none'})\nEnter name to use/create:`)
+                        if (!name) return
+                        let collection = (listRes.data.collections || []).find((c: any) => c.name.toLowerCase() === name.toLowerCase())
+                        if (!collection) {
+                          const res = await collectionsAPI.create(name, true)
+                          collection = res.data.collection
+                        }
+                        await collectionsAPI.addPost(collection._id, post._id)
+                        alert('Added to collection')
+                      } catch {
+                        alert('Failed to add to collection')
+                      }
+                    }}
+                    className="absolute bottom-2 right-2 bg-black/60 hover:bg-black/80 text-white text-xs px-2 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                    title="Add to Collection"
+                  >
+                    <i className="fas fa-folder-plus mr-1"></i>Add
+                  </button>
                 </div>
               ))
             ) : (
@@ -418,19 +491,66 @@ export default function Profile() {
         {/* COLLECTION Grid */}
         {activeTab === 'collection' && (
           <div className="p-4">
+            {isOwnProfile && (
+              <div className="flex items-center gap-2 mb-3">
+                <button
+                  onClick={async () => {
+                    const name = prompt('Collection name')
+                    if (!name) return
+                    try {
+                      const res = await collectionsAPI.create(name, true)
+                      setCollections([res.data.collection, ...collections])
+                    } catch (e) {
+                      alert('Failed to create collection')
+                    }
+                  }}
+                  className="bg-primary text-white px-3 py-2 rounded-lg text-sm font-semibold hover:bg-primary-dark transition-colors"
+                >
+                  <i className="fas fa-plus mr-2"></i>Create Collection
+                </button>
+              </div>
+            )}
             {collections.length > 0 ? (
               <div className="grid grid-cols-2 gap-4">
                 {collections.map((collection) => (
                   <div
                     key={collection._id}
-                    className="bg-dark-gray rounded-lg p-4 cursor-pointer hover:bg-light-gray transition-colors"
+                    className="bg-dark-gray rounded-lg p-4 hover:bg-light-gray transition-colors cursor-pointer"
                     onClick={() => navigate(`/collection/${collection._id}`)}
                   >
                     <div className="aspect-square bg-medium-gray rounded-lg mb-2 flex items-center justify-center">
                       <i className="fas fa-folder text-4xl text-primary-light"></i>
                     </div>
-                    <h4 className="text-white font-semibold text-sm mb-1">{collection.name}</h4>
-                    <p className="text-xs text-text-gray">{collection.posts?.length || 0} posts</p>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="text-white font-semibold text-sm mb-1">{collection.name}</h4>
+                        <p className="text-xs text-text-gray">{collection.postCount || (collection.posts?.length || 0)} posts</p>
+                      </div>
+                      {isOwnProfile && (
+                        <button
+                          onClick={async () => {
+                            if (!confirm('Delete this collection?')) return
+                            try {
+                              await collectionsAPI.removePost('noop', 'noop') // placeholder to ensure type presence
+                            } catch {}
+                            try {
+                              await fetch((import.meta as any).env.VITE_API_URL ? `${(import.meta as any).env.VITE_API_URL}/collections/${collection._id}` : `/api/collections/${collection._id}`, {
+                                method: 'DELETE',
+                                headers: { 'Authorization': `Bearer ${localStorage.getItem('token') || ''}` },
+                                credentials: 'include',
+                              })
+                              setCollections(collections.filter((c) => c._id !== collection._id))
+                            } catch (e) {
+                              alert('Failed to delete collection')
+                            }
+                          }}
+                          className="text-danger hover:text-red-400"
+                          title="Delete collection"
+                        >
+                          <i className="fas fa-trash"></i>
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -477,6 +597,15 @@ export default function Profile() {
           </div>
         )}
       </div>
+      {showQR && (
+        <QRModal
+          isOpen={showQR}
+          onClose={() => setShowQR(false)}
+          username={displayUser?.profile?.username || displayUser?.profile?.fullName || 'user'}
+          userId={(userId || user?._id || '').toString()}
+        />
+      )}
     </div>
   )
 }
+

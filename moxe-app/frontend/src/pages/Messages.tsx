@@ -4,6 +4,7 @@ import { AppDispatch, RootState } from '../store'
 import { fetchConversations, fetchMessages, sendMessage, translateMessage } from '../store/slices/chatSlice'
 import { useSocket } from '../hooks/useSocket'
 import TypingIndicator from '../components/feed/TypingIndicator'
+import { chatAPI } from '../services/api'
 
 export default function Messages() {
   const dispatch = useDispatch<AppDispatch>()
@@ -19,6 +20,10 @@ export default function Messages() {
   const [activeFilter, setActiveFilter] = useState<'all' | 'followers' | 'following' | 'close_friends' | 'request' | 'blocked' | 'favorite'>('all')
   const messageInputRef = useRef<HTMLInputElement>(null)
   const { socket, isConnected } = useSocket()
+  const [menuForMessage, setMenuForMessage] = useState<any | null>(null)
+  const [isEditing, setIsEditing] = useState(false)
+  const [editText, setEditText] = useState('')
+  const [replyTo, setReplyTo] = useState<any | null>(null)
 
   useEffect(() => {
     dispatch(fetchConversations())
@@ -89,6 +94,15 @@ export default function Messages() {
     }
   }, [isConnected, socket, selectedUserId, user, dispatch])
 
+  // Mark messages as read when viewing a conversation
+  useEffect(() => {
+    if (!selectedUserId || !messages?.length) return
+    const unread = messages.filter((m: any) => (m.sender?._id || m.sender) !== user?._id && !(m.status?.isRead))
+    unread.slice(-5).forEach((m: any) => {
+      chatAPI.markRead(m._id).catch(() => {})
+    })
+  }, [messages, selectedUserId, user])
+
   const handleTyping = () => {
     if (!socket || !selectedUserId) return
 
@@ -118,10 +132,55 @@ export default function Messages() {
     
     const text = messageInputRef.current.value
     messageInputRef.current.value = ''
+    if (isEditing && menuForMessage) {
+      await chatAPI.editMessage(menuForMessage._id, text).catch(() => {})
+      setIsEditing(false)
+      setMenuForMessage(null)
+      dispatch(fetchMessages(selectedUserId))
+      return
+    }
     await dispatch(sendMessage({
       recipientId: selectedUserId,
       text,
     }))
+  }
+
+  const openMenu = (msg: any) => {
+    setMenuForMessage(msg)
+    setIsEditing(false)
+    setEditText(msg.content?.text || msg.text || '')
+  }
+
+  const handleRecall = async () => {
+    if (!menuForMessage) return
+    await chatAPI.recallMessage(menuForMessage._id).catch(() => {})
+    setMenuForMessage(null)
+    if (selectedUserId) dispatch(fetchMessages(selectedUserId))
+  }
+
+  const handleEdit = () => {
+    if (!menuForMessage) return
+    setIsEditing(true)
+    if (messageInputRef.current) {
+      messageInputRef.current.value = editText
+      messageInputRef.current.focus()
+    }
+  }
+
+  const handleReact = async (emoji: string) => {
+    if (!menuForMessage) return
+    await chatAPI.addReaction(menuForMessage._id, emoji).catch(() => {})
+    setMenuForMessage(null)
+    if (selectedUserId) dispatch(fetchMessages(selectedUserId))
+  }
+
+  const handleReply = () => {
+    if (!menuForMessage) return
+    setReplyTo(menuForMessage)
+    if (messageInputRef.current) {
+      messageInputRef.current.focus()
+    }
+    setMenuForMessage(null)
   }
 
   // Filter conversations based on active filter
@@ -272,6 +331,7 @@ export default function Messages() {
                 <div
                   key={msg._id}
                   className={`flex items-start gap-2 ${isOwn ? 'flex-row-reverse' : ''}`}
+                  onContextMenu={(e) => { e.preventDefault(); openMenu(msg) }}
                 >
                   <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white font-bold text-sm">
                     {msg.sender?.profile?.fullName?.charAt(0) || 'U'}
@@ -297,7 +357,21 @@ export default function Messages() {
                     )}
                     <div className="text-xs text-text-gray mt-1">
                       {new Date(msg.createdAt).toLocaleTimeString()}
+                      {msg.settings?.isEdited && <span className="ml-2 text-[10px] opacity-70">(edited)</span>}
+                      {msg.settings?.isRecalled && <span className="ml-2 text-[10px] text-warning">deleted</span>}
                     </div>
+                    {menuForMessage?._id === msg._id && (
+                      <div className={`mt-2 inline-flex items-center gap-2 bg-medium-gray rounded-lg px-2 py-1 ${isOwn ? 'flex-row-reverse' : ''}`}>
+                        <button onClick={handleReply} className="text-xs text-white hover:text-primary"><i className="fas fa-reply"></i> Reply</button>
+                        {isOwn && <button onClick={handleEdit} className="text-xs text-white hover:text-primary"><i className="fas fa-edit"></i> Edit</button>}
+                        {isOwn && <button onClick={handleRecall} className="text-xs text-danger hover:text-red-400"><i className="fas fa-trash-alt"></i> Delete</button>}
+                        <div className="flex gap-1">
+                          {['👍','❤️','😂','😮','😢','😡'].map(e => (
+                            <button key={e} onClick={() => handleReact(e)} className="text-base">{e}</button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               )
@@ -313,6 +387,15 @@ export default function Messages() {
           )}
         </div>
 
+        {replyTo && (
+          <div className="mt-2 text-xs text-text-gray bg-light-gray/20 rounded px-2 py-1 inline-flex items-center gap-2">
+            <i className="fas fa-reply text-primary"></i>
+            Replying to: <span className="text-white">{replyTo.content?.text || replyTo.text}</span>
+            <button onClick={() => setReplyTo(null)} className="ml-2 text-text-gray hover:text-white">
+              <i className="fas fa-times"></i>
+            </button>
+          </div>
+        )}
         <div className="flex gap-2 mt-4">
           <input
             ref={messageInputRef}
@@ -340,3 +423,4 @@ export default function Messages() {
     </div>
   )
 }
+

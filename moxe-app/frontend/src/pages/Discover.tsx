@@ -13,10 +13,20 @@ export default function Discover() {
   const [hashtags, setHashtags] = useState<any[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [history, setHistory] = useState<string[]>([])
+  const [showHistory, setShowHistory] = useState(false)
 
   useEffect(() => {
     loadDiscoverContent()
   }, [activeTab])
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('moxe_search_history') || '[]'
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed)) setHistory(parsed.slice(0, 10))
+    } catch {}
+  }, [])
 
   const loadDiscoverContent = async () => {
     setIsLoading(true)
@@ -55,6 +65,14 @@ export default function Discover() {
       setPosts(response.data.posts || [])
       setPeople(response.data.users || [])
       setHashtags(response.data.hashtags || [])
+      // persist search history
+      try {
+        const raw = localStorage.getItem('moxe_search_history') || '[]'
+        const parsed = Array.isArray(JSON.parse(raw)) ? JSON.parse(raw) : []
+        const next = [searchQuery.trim(), ...parsed.filter((q: string) => q !== searchQuery.trim())].slice(0, 10)
+        localStorage.setItem('moxe_search_history', JSON.stringify(next))
+        setHistory(next)
+      } catch {}
     } catch (error) {
       console.error('Failed to search:', error)
     } finally {
@@ -69,13 +87,15 @@ export default function Discover() {
         <h1 className="text-2xl font-bold text-white mb-4">Discover</h1>
         
         {/* Search Bar */}
-        <div className="bg-medium-gray rounded-xl p-3 flex items-center gap-3">
+        <div className="bg-medium-gray rounded-xl p-3 flex items-center gap-3 relative">
           <i className="fas fa-search text-text-gray"></i>
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+            onFocus={() => setShowHistory(true)}
+            onBlur={() => setTimeout(() => setShowHistory(false), 150)}
             placeholder="Search users, posts, hashtags..."
             className="flex-1 bg-transparent text-white placeholder-text-gray outline-none"
           />
@@ -89,6 +109,29 @@ export default function Discover() {
             >
               <i className="fas fa-times"></i>
             </button>
+          )}
+          {showHistory && !searchQuery && history.length > 0 && (
+            <div className="absolute top-full left-0 right-0 mt-2 bg-dark-gray rounded-lg shadow-xl max-h-60 overflow-y-auto z-10">
+              <div className="flex items-center justify-between px-3 py-2 border-b border-light-gray/10">
+                <span className="text-xs text-text-gray">Recent searches</span>
+                <button
+                  onClick={() => { localStorage.removeItem('moxe_search_history'); setHistory([]) }}
+                  className="text-xs text-text-gray hover:text-white"
+                >
+                  Clear
+                </button>
+              </div>
+              {history.map((q) => (
+                <button
+                  key={q}
+                  onClick={() => { setSearchQuery(q); setTimeout(handleSearch, 100) }}
+                  className="w-full text-left px-3 py-2 hover:bg-light-gray/20 transition-colors text-sm text-white"
+                >
+                  <i className="fas fa-clock mr-2 text-text-gray"></i>
+                  {q}
+                </button>
+              ))}
+            </div>
           )}
         </div>
       </div>

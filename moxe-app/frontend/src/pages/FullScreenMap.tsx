@@ -10,6 +10,7 @@ import api from '../services/api'
 import MapControls from '../components/map/MapControls'
 import PlacesLibrary from '../components/map/PlacesLibrary'
 import VoiceCommands from '../components/map/VoiceCommands'
+import { DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM } from '../utils/constants'
 
 // Fix for default marker icons
 delete (L.Icon.Default.prototype as any)._getIconUrl
@@ -50,7 +51,7 @@ export default function FullScreenMap() {
   const navigate = useNavigate()
   const { socket, isConnected } = useSocket()
   const { user } = useSelector((state: RootState) => state.auth)
-  const [userLocation, setUserLocation] = useState<[number, number]>([40.7128, -74.0060])
+  const [userLocation, setUserLocation] = useState<[number, number]>(DEFAULT_MAP_CENTER)
   const [nearbyUsers, setNearbyUsers] = useState<any[]>([])
   const [trafficEnabled, setTrafficEnabled] = useState(false)
   const [mapType, setMapType] = useState<'standard' | 'satellite' | 'terrain'>('standard')
@@ -58,10 +59,12 @@ export default function FullScreenMap() {
   const [showPlacesLibrary, setShowPlacesLibrary] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<any[]>([])
-  const [mapZoom, setMapZoom] = useState(13)
+  const [mapZoom, setMapZoom] = useState(DEFAULT_MAP_ZOOM)
   const [isSharingLocation, setIsSharingLocation] = useState(false)
   const [savedPlaces, setSavedPlaces] = useState<any[]>([])
   const [weather, setWeather] = useState<{ temp: number; aqi: number; condition: string } | null>(null)
+  const [currentLocationName, setCurrentLocationName] = useState<string>('Dharapadavedu')
+  const [isFullHD, setIsFullHD] = useState<boolean>(false)
 
   // Prevent body scroll when fullscreen map is open
   useEffect(() => {
@@ -72,6 +75,18 @@ export default function FullScreenMap() {
       document.body.style.overflow = ''
       document.documentElement.style.overflow = ''
     }
+  }, [])
+
+  // Detect Full HD or larger screens and adjust layout
+  useEffect(() => {
+    const handleResize = () => {
+      const w = window.innerWidth
+      const h = window.innerHeight
+      setIsFullHD(w >= 1920 && h >= 1080)
+    }
+    handleResize()
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
   }, [])
 
   useEffect(() => {
@@ -229,10 +244,35 @@ export default function FullScreenMap() {
     setMapZoom(15)
     setSearchQuery('')
     setSearchResults([])
+    setCurrentLocationName(place.name || place.address?.split(',')[0] || 'Current Location')
     if (navigator.vibrate) {
       navigator.vibrate([100, 50, 100])
     }
   }
+
+  // Reverse geocode to get location name
+  useEffect(() => {
+    const reverseGeocode = async () => {
+      try {
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${userLocation[0]}&lon=${userLocation[1]}&zoom=18&addressdetails=1`
+        )
+        const data = await response.json()
+        if (data.address) {
+          const name = data.address.village || 
+                      data.address.town || 
+                      data.address.city || 
+                      data.address.county || 
+                      data.display_name?.split(',')[0] || 
+                      'Current Location'
+          setCurrentLocationName(name)
+        }
+      } catch (error) {
+        console.error('Reverse geocoding error:', error)
+      }
+    }
+    reverseGeocode()
+  }, [userLocation])
 
   const handleShareLocation = async () => {
     setIsSharingLocation(!isSharingLocation)
@@ -285,13 +325,15 @@ export default function FullScreenMap() {
         width: '100vw',
         height: '100vh',
         height: '100dvh',
+        minWidth: isFullHD ? '1920px' as any : undefined,
+        minHeight: isFullHD ? '1080px' as any : undefined,
       }}
     >
       {/* Map View - Top 2/3 */}
       <div 
         className="absolute top-0 left-0 right-0" 
         style={{ 
-          height: '66.67%',
+          height: isFullHD ? '75%' : '66.67%',
           paddingTop: 'env(safe-area-inset-top, 0px)',
         }}
       >
@@ -347,6 +389,23 @@ export default function FullScreenMap() {
             </Popup>
           </Marker>
           
+          {/* Location Name Below Marker */}
+          <div 
+            className="absolute z-30"
+            style={{
+              left: '50%',
+              top: '50%',
+              transform: 'translate(-50%, calc(-50% + 30px))',
+              pointerEvents: 'none',
+            }}
+          >
+            <div className="bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-lg shadow-lg">
+              <span className="text-sm font-medium text-gray-900 whitespace-nowrap">
+                {currentLocationName}
+              </span>
+            </div>
+          </div>
+          
           {/* Nearby Users Markers */}
           {nearbyUsers.map((user: any, index: number) => {
             if (!user.location?.latitude || !user.location?.longitude) return null
@@ -382,28 +441,15 @@ export default function FullScreenMap() {
           })}
         </MapContainer>
 
-        {/* Weather Info - Top Right */}
-        {weather && (
-          <div className="absolute top-2 right-2 z-20 bg-medium-gray/95 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg">
-            <div className="flex items-center gap-2 text-white text-xs">
-              <i className={`fas fa-${weather.condition === 'partly-cloudy' ? 'cloud-sun' : 'sun'} text-sm`}></i>
-              <span className="font-semibold">{weather.temp}°</span>
-              <span className="text-text-gray">•</span>
-              <span>AQI {weather.aqi}</span>
-              <div className={`w-2 h-2 rounded-full ${weather.aqi < 50 ? 'bg-green-500' : weather.aqi < 100 ? 'bg-yellow-500' : 'bg-orange-500'}`}></div>
-            </div>
-          </div>
-        )}
-
-        {/* Map Controls - Top Right */}
-        <div className="absolute top-12 right-2 z-20 flex flex-col gap-2">
+        {/* Map Controls - Top Right (Above Weather) */}
+        <div className="absolute top-2 right-2 z-20 flex flex-col gap-2">
           <button
             onClick={() => setMapType(mapType === 'standard' ? 'satellite' : mapType === 'satellite' ? 'terrain' : 'standard')}
-            className="w-10 h-10 rounded-lg bg-medium-gray/95 backdrop-blur-sm active:bg-light-gray transition-colors flex items-center justify-center shadow-lg touch-manipulation"
+            className={`${isFullHD ? 'w-12 h-12' : 'w-9 h-9'} rounded-lg bg-medium-gray/95 backdrop-blur-sm active:bg-light-gray transition-colors flex items-center justify-center shadow-lg touch-manipulation`}
             style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
             aria-label="Map type"
           >
-            <i className="fas fa-layer-group text-white text-sm"></i>
+            <i className={`fas fa-layer-group text-white ${isFullHD ? 'text-base' : 'text-xs'}`}></i>
           </button>
           <button
             onClick={() => {
@@ -420,13 +466,26 @@ export default function FullScreenMap() {
                 )
               }
             }}
-            className="w-10 h-10 rounded-lg bg-medium-gray/95 backdrop-blur-sm active:bg-light-gray transition-colors flex items-center justify-center shadow-lg touch-manipulation"
+            className={`${isFullHD ? 'w-12 h-12' : 'w-9 h-9'} rounded-lg bg-medium-gray/95 backdrop-blur-sm active:bg-light-gray transition-colors flex items-center justify-center shadow-lg touch-manipulation`}
             style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
-            aria-label="My location"
+            aria-label="Compass"
           >
-            <i className="fas fa-crosshairs text-white text-sm"></i>
+            <i className={`fas fa-compass text-white ${isFullHD ? 'text-base' : 'text-xs'}`}></i>
           </button>
         </div>
+
+        {/* Weather Info - Top Right (Below Controls) */}
+        {weather && (
+          <div className={`absolute ${isFullHD ? 'top-16' : 'top-14'} right-2 z-20 bg-medium-gray/95 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg`}>
+            <div className={`flex items-center gap-2 text-white ${isFullHD ? 'text-sm' : 'text-xs'}`}>
+              <i className={`fas fa-${weather.condition === 'partly-cloudy' ? 'cloud-sun' : 'sun'} ${isFullHD ? 'text-sm' : 'text-xs'}`}></i>
+              <span className="font-semibold">{weather.temp}°</span>
+              <span className="text-text-gray">•</span>
+              <span>AQI {weather.aqi}</span>
+              <div className={`w-2 h-2 rounded-full ${weather.aqi < 50 ? 'bg-green-500' : weather.aqi < 100 ? 'bg-yellow-500' : 'bg-orange-500'}`}></div>
+            </div>
+          </div>
+        )}
 
         {/* Close Button - Top Left */}
         <button
@@ -443,24 +502,29 @@ export default function FullScreenMap() {
       <div 
         className="absolute bottom-0 left-0 right-0 bg-medium-gray rounded-t-3xl z-30"
         style={{ 
-          height: '33.33%',
+          height: isFullHD ? '25%' : '33.33%',
           paddingBottom: 'env(safe-area-inset-bottom, 0px)',
           paddingLeft: 'env(safe-area-inset-left, 16px)',
           paddingRight: 'env(safe-area-inset-right, 16px)',
-          paddingTop: '16px',
+          paddingTop: isFullHD ? '16px' : '12px',
         }}
       >
+        {/* Handle Bar */}
+        <div className={`flex justify-center ${isFullHD ? 'mb-4' : 'mb-3'}`}>
+          <div className={`${isFullHD ? 'w-16 h-1.5' : 'w-12 h-1'} bg-light-gray/40 rounded-full`}></div>
+        </div>
+
         {/* Search Bar */}
         <div className="mb-4">
           <div className="bg-dark-gray rounded-xl px-4 py-3 flex items-center gap-3">
-            <i className="fas fa-search text-text-gray text-sm"></i>
+            <i className={`fas fa-search text-text-gray ${isFullHD ? 'text-base' : 'text-sm'}`}></i>
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
               placeholder="Q Search Maps"
-              className="flex-1 bg-transparent text-white text-sm placeholder-text-gray outline-none"
+              className={`flex-1 bg-transparent text-white ${isFullHD ? 'text-base' : 'text-sm'} placeholder-text-gray outline-none`}
               style={{ WebkitTapHighlightColor: 'transparent' }}
               autoComplete="off"
               autoCorrect="off"
@@ -475,13 +539,14 @@ export default function FullScreenMap() {
             }} />
             <button
               onClick={() => setShowPlacesLibrary(true)}
-              className="w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold"
+              className={`${isFullHD ? 'w-9 h-9 text-sm' : 'w-8 h-8 text-xs'} rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold touch-manipulation`}
+              style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
             >
-              {user?.profile?.fullName?.charAt(0) || 'U'}
+              GB
             </button>
           </div>
           {searchResults.length > 0 && (
-            <div className="mt-2 bg-dark-gray rounded-xl max-h-32 overflow-y-auto">
+            <div className={`mt-2 bg-dark-gray rounded-xl ${isFullHD ? 'max-h-48' : 'max-h-32'} overflow-y-auto`}>
               {searchResults.map((result, index) => (
                 <button
                   key={index}
@@ -489,8 +554,8 @@ export default function FullScreenMap() {
                   className="w-full p-3 text-left active:bg-light-gray/20 transition-colors border-b border-light-gray/10 last:border-0"
                   style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
                 >
-                  <div className="font-semibold text-white text-sm">{result.name}</div>
-                  <div className="text-xs text-text-gray mt-1 line-clamp-1">{result.address}</div>
+                  <div className={`font-semibold text-white ${isFullHD ? 'text-base' : 'text-sm'}`}>{result.name}</div>
+                  <div className={`${isFullHD ? 'text-sm' : 'text-xs'} text-text-gray mt-1 line-clamp-1`}>{result.address}</div>
                 </button>
               ))}
             </div>
@@ -515,11 +580,11 @@ export default function FullScreenMap() {
               className="flex-shrink-0 flex flex-col items-center gap-2 touch-manipulation"
               style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
             >
-              <div className="w-14 h-14 rounded-full bg-primary/20 flex items-center justify-center">
-                <i className="fas fa-home text-primary text-lg"></i>
+              <div className={`${isFullHD ? 'w-16 h-16' : 'w-14 h-14'} rounded-full bg-primary/20 flex items-center justify-center`}>
+                <i className={`fas fa-home text-primary ${isFullHD ? 'text-xl' : 'text-lg'}`}></i>
               </div>
               <div className="text-center">
-                <div className="text-white text-xs font-medium">Home</div>
+                <div className={`text-white ${isFullHD ? 'text-sm' : 'text-xs'} font-medium`}>Home</div>
                 <div className="text-primary text-xs">Add</div>
               </div>
             </button>
@@ -538,44 +603,47 @@ export default function FullScreenMap() {
               className="flex-shrink-0 flex flex-col items-center gap-2 touch-manipulation"
               style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
             >
-              <div className="w-14 h-14 rounded-full bg-primary/20 flex items-center justify-center">
-                <i className="fas fa-briefcase text-primary text-lg"></i>
+              <div className={`${isFullHD ? 'w-16 h-16' : 'w-14 h-14'} rounded-full bg-primary/20 flex items-center justify-center`}>
+                <i className={`fas fa-briefcase text-primary ${isFullHD ? 'text-xl' : 'text-lg'}`}></i>
               </div>
               <div className="text-center">
-                <div className="text-white text-xs font-medium">Work</div>
+                <div className={`text-white ${isFullHD ? 'text-sm' : 'text-xs'} font-medium`}>Work</div>
                 <div className="text-primary text-xs">Add</div>
               </div>
             </button>
 
             {/* Saved Places */}
-            {quickPlaces.map((place: any, index: number) => (
-              <button
-                key={index}
-                onClick={() => {
-                  setUserLocation([place.coordinates.lat, place.coordinates.lng])
-                  setMapZoom(15)
-                }}
-                className="flex-shrink-0 flex flex-col items-center gap-2 touch-manipulation"
-                style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
-              >
-                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center">
-                  <i className="fas fa-map-marker-alt text-white text-lg"></i>
-                </div>
-                <div className="text-center">
-                  <div className="text-white text-xs font-medium truncate w-16">{place.name}</div>
-                  {place.coordinates && (
-                    <div className="text-text-gray text-xs">
-                      {Math.round(
-                        Math.sqrt(
-                          Math.pow(place.coordinates.lat - userLocation[0], 2) +
-                          Math.pow(place.coordinates.lng - userLocation[1], 2)
-                        ) * 111
-                      )} km
-                    </div>
-                  )}
-                </div>
-              </button>
-            ))}
+            {quickPlaces.map((place: any, index: number) => {
+              const distance = place.coordinates ? Math.round(
+                Math.sqrt(
+                  Math.pow(place.coordinates.lat - userLocation[0], 2) +
+                  Math.pow(place.coordinates.lng - userLocation[1], 2)
+                ) * 111
+              ) : 0
+              
+              return (
+                <button
+                  key={index}
+                  onClick={() => {
+                    setUserLocation([place.coordinates.lat, place.coordinates.lng])
+                    setMapZoom(15)
+                    setCurrentLocationName(place.name || 'Current Location')
+                  }}
+                  className="flex-shrink-0 flex flex-col items-center gap-2 touch-manipulation"
+                  style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
+                >
+                <div className={`${isFullHD ? 'w-16 h-16' : 'w-14 h-14'} rounded-full bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center`}>
+                  <i className={`fas fa-graduation-cap text-white ${isFullHD ? 'text-xl' : 'text-lg'}`}></i>
+                  </div>
+                  <div className="text-center">
+                  <div className={`text-white ${isFullHD ? 'text-sm' : 'text-xs'} font-medium truncate w-16`}>{place.name || 'Place'}</div>
+                    {distance > 0 && (
+                    <div className={`text-text-gray ${isFullHD ? 'text-sm' : 'text-xs'}`}>{distance} km</div>
+                    )}
+                  </div>
+                </button>
+              )
+            })}
 
             {/* Add Place */}
             <button
@@ -583,11 +651,11 @@ export default function FullScreenMap() {
               className="flex-shrink-0 flex flex-col items-center gap-2 touch-manipulation"
               style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
             >
-              <div className="w-14 h-14 rounded-full bg-light-gray/30 flex items-center justify-center border-2 border-dashed border-text-gray">
-                <i className="fas fa-plus text-text-gray text-lg"></i>
+              <div className={`${isFullHD ? 'w-16 h-16' : 'w-14 h-14'} rounded-full bg-light-gray/30 flex items-center justify-center border-2 border-dashed border-text-gray`}>
+                <i className={`fas fa-plus text-text-gray ${isFullHD ? 'text-xl' : 'text-lg'}`}></i>
               </div>
               <div className="text-center">
-                <div className="text-text-gray text-xs font-medium">Add</div>
+                <div className={`text-text-gray ${isFullHD ? 'text-sm' : 'text-xs'} font-medium`}>Add</div>
               </div>
             </button>
           </div>
@@ -595,19 +663,19 @@ export default function FullScreenMap() {
           {/* Place Count */}
           <button
             onClick={() => setShowPlacesLibrary(true)}
-            className="mt-3 flex items-center justify-between text-text-gray text-xs w-full touch-manipulation"
+            className={`mt-3 flex items-center justify-between text-text-gray ${isFullHD ? 'text-sm' : 'text-xs'} w-full touch-manipulation`}
             style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
           >
             <span>{placeCount} Place{placeCount !== 1 ? 's' : ''} • {guideCount} Guide{guideCount !== 1 ? 's' : ''} • {routeCount} Route{routeCount !== 1 ? 's' : ''}</span>
-            <i className="fas fa-chevron-right text-xs"></i>
+            <i className={`fas fa-chevron-right ${isFullHD ? 'text-sm' : 'text-xs'}`}></i>
           </button>
         </div>
 
         {/* Action Buttons */}
-        <div className="flex gap-3">
+        <div className={`flex gap-3`}>
           <button
             onClick={handleShareLocation}
-            className={`flex-1 py-3 rounded-xl font-semibold text-sm transition-colors touch-manipulation ${
+            className={`flex-1 ${isFullHD ? 'py-4 text-base' : 'py-3 text-sm'} rounded-xl font-semibold transition-colors touch-manipulation ${
               isSharingLocation
                 ? 'bg-primary text-white'
                 : 'bg-dark-gray text-primary border border-primary/30'
@@ -618,7 +686,7 @@ export default function FullScreenMap() {
           </button>
           <button
             onClick={handleMarkLocation}
-            className="flex-1 py-3 rounded-xl bg-dark-gray text-primary border border-primary/30 font-semibold text-sm hover:bg-primary/10 transition-colors touch-manipulation"
+            className={`flex-1 ${isFullHD ? 'py-4 text-base' : 'py-3 text-sm'} rounded-xl bg-dark-gray text-primary border border-primary/30 font-semibold hover:bg-primary/10 transition-colors touch-manipulation`}
             style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
           >
             Mark My Location

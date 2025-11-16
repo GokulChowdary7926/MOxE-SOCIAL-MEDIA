@@ -2,6 +2,7 @@ import { Response } from 'express'
 import { AuthRequest } from '../middleware/auth'
 import Story from '../models/Story'
 import User from '../models/User'
+import Post from '../models/Post'
 
 export const createStory = async (req: AuthRequest, res: Response) => {
   try {
@@ -143,4 +144,43 @@ export const viewStory = async (req: AuthRequest, res: Response) => {
     res.status(500).json({ message: error.message })
   }
 }
+
+export const sharePostToStory = async (req: AuthRequest, res: Response) => {
+  try {
+    const { postId } = req.params
+    const post = await Post.findById(postId).populate('author', 'profile').lean()
+    if (!post) {
+      return res.status(404).json({ message: 'Post not found' })
+    }
+    // Prepare media from post
+    const media = (post.content?.media || []).slice(0, 1).map((m: any) => ({
+      url: m.url,
+      type: m.type || 'image',
+      thumbnail: m.thumbnail,
+      duration: m.duration,
+    }))
+    if (media.length === 0) {
+      return res.status(400).json({ message: 'Post has no media to share' })
+    }
+    const expiresAt = new Date()
+    expiresAt.setHours(expiresAt.getHours() + 24)
+    const caption = `Shared from @${post.author?.profile?.username || post.author?.profile?.fullName || 'user'}`
+    const story = await Story.create({
+      author: req.user._id,
+      media,
+      caption,
+      visibility: { type: 'public', except: [] },
+      expiresAt,
+      sharedPost: postId,
+    } as any)
+    const io = req.app.get('io')
+    if (io) {
+      io.emit('new_story', { story })
+    }
+    res.json({ story })
+  } catch (error: any) {
+    res.status(500).json({ message: error.message })
+  }
+}
+
 

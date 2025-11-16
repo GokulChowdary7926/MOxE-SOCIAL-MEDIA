@@ -28,7 +28,7 @@ function MapController({ center }: { center: [number, number] }) {
 export default function Map() {
   const navigate = useNavigate()
   const { socket, isConnected } = useSocket()
-  const [userLocation, setUserLocation] = useState<[number, number]>([40.7128, -74.0060])
+  const [userLocation, setUserLocation] = useState<[number, number]>([20.5937, 78.9629])
   const [nearbyUsers, setNearbyUsers] = useState<any[]>([])
   const [isProximityEnabled, setIsProximityEnabled] = useState(true)
   const [proximityAlert, setProximityAlert] = useState<{ userName: string; distance: string } | null>(null)
@@ -291,7 +291,7 @@ export default function Map() {
       {/* 1. Map Section */}
       <div 
         className="bg-medium-gray rounded-2xl p-4 cursor-pointer hover:bg-light-gray transition-colors"
-        onClick={() => navigate('/map/snap')}
+        onClick={() => navigate('/map/fullscreen')}
       >
         <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
           <i className="fas fa-map-marked-alt text-primary-light"></i>

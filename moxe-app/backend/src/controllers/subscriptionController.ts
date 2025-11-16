@@ -1,3 +1,62 @@
+import { Request, Response } from 'express'
+import User from '../models/User'
+
+export const getPlans = async (_req: Request, res: Response) => {
+  res.json({
+    plans: [
+      { id: 'basic', name: 'Basic', priceMonthly: 0, features: ['Ads supported'] },
+      { id: 'star', name: 'Star', priceMonthly: 1, features: ['Ad-free', 'Story analytics', 'Extended stories'] },
+      { id: 'thick', name: 'Thick', priceMonthly: 5, features: ['Business insights', 'Shop tagging', 'Priority support'] },
+    ],
+  })
+}
+
+export const getStatus = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?._id
+    if (!userId) return res.status(401).json({ message: 'Unauthorized' })
+    const user = await User.findById(userId).select('subscription')
+    if (!user) return res.status(404).json({ message: 'User not found' })
+    res.json({ subscription: user.subscription })
+  } catch (e: any) {
+    res.status(500).json({ message: e.message })
+  }
+}
+
+export const subscribe = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?._id
+    const { plan } = req.body
+    if (!userId) return res.status(401).json({ message: 'Unauthorized' })
+    if (!['star', 'thick'].includes(plan)) return res.status(400).json({ message: 'Invalid plan' })
+    const user = await User.findById(userId)
+    if (!user) return res.status(404).json({ message: 'User not found' })
+    user.subscription.tier = plan
+    user.subscription.startDate = new Date()
+    user.subscription.endDate = undefined
+    user.subscription.autoRenew = true
+    await user.save()
+    res.json({ message: 'Subscribed', subscription: user.subscription })
+  } catch (e: any) {
+    res.status(500).json({ message: e.message })
+  }
+}
+
+export const cancel = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?._id
+    if (!userId) return res.status(401).json({ message: 'Unauthorized' })
+    const user = await User.findById(userId)
+    if (!user) return res.status(404).json({ message: 'User not found' })
+    user.subscription.autoRenew = false
+    user.subscription.endDate = new Date(Date.now() + 28 * 24 * 60 * 60 * 1000)
+    await user.save()
+    res.json({ message: 'Subscription will end at period end', subscription: user.subscription })
+  } catch (e: any) {
+    res.status(500).json({ message: e.message })
+  }
+}
+
 import { Response } from 'express'
 import { AuthRequest } from '../middleware/auth'
 import User from '../models/User'

@@ -36,6 +36,8 @@ import AccessibilitySettings from './pages/settings/AccessibilitySettings'
 import LanguageRegionSettings from './pages/settings/LanguageRegionSettings'
 import ConnectedAppsSettings from './pages/settings/ConnectedAppsSettings'
 import Discover from './pages/Discover'
+import QRScanner from './pages/QRScanner'
+import CollectionDetail from './pages/CollectionDetail'
 
 function App() {
   const dispatch = useDispatch<AppDispatch>()
@@ -85,11 +87,14 @@ function App() {
         <Route path="/settings/language-region" element={isAuthenticated ? <LanguageRegionSettings /> : <Navigate to="/login" />} />
         <Route path="/settings/connected-apps" element={isAuthenticated ? <ConnectedAppsSettings /> : <Navigate to="/login" />} />
         <Route path="/discover" element={isAuthenticated ? <Discover /> : <Navigate to="/login" />} />
+        <Route path="/qr/scan" element={isAuthenticated ? <QRScanner /> : <Navigate to="/login" />} />
+        <Route path="/collection/:collectionId" element={isAuthenticated ? <CollectionDetail /> : <Navigate to="/login" />} />
       </Route>
     </Routes>
   )
 }
 
 export default App
+
 
 

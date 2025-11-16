@@ -74,9 +74,16 @@ export const verifyOTP = createAsyncThunk(
 
 export const register = createAsyncThunk(
   'auth/register',
-  async (data: { phone: string; otp: string; name: string; accountType: string; email?: string }, { rejectWithValue }) => {
+  async (data: { phone: string; otp: string; name: string; accountType: 'personal' | 'business' | 'creator' }, { rejectWithValue }) => {
     try {
-      const response = await api.post('/auth/register', data)
+      // Enforce phone-only registration payload
+      const payload = {
+        phone: data.phone,
+        otp: data.otp,
+        name: data.name,
+        accountType: data.accountType,
+      }
+      const response = await api.post('/auth/register', payload)
       if (response.data.token) {
         localStorage.setItem('token', response.data.token)
       }
@@ -225,5 +232,6 @@ const authSlice = createSlice({
 
 export const { logout, clearError, setOTPSent, setPhoneNumber } = authSlice.actions
 export default authSlice.reducer
+
 
 

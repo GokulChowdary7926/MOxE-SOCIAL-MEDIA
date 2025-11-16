@@ -313,3 +313,44 @@ export const getSuggestions = async (req: AuthRequest, res: Response) => {
     res.status(500).json({ message: error.message })
   }
 }
+
+export const getCloseFriends = async (req: AuthRequest, res: Response) => {
+  try {
+    const user = await User.findById(req.user._id).populate('closeFriends', 'profile')
+    if (!user) return res.status(404).json({ message: 'User not found' })
+    res.json({ closeFriends: user.closeFriends || [] })
+  } catch (error: any) {
+    res.status(500).json({ message: error.message })
+  }
+}
+
+export const addCloseFriend = async (req: AuthRequest, res: Response) => {
+  try {
+    const { userId } = req.body
+    if (!userId) return res.status(400).json({ message: 'userId required' })
+    const user = await User.findById(req.user._id)
+    if (!user) return res.status(404).json({ message: 'User not found' })
+    user.closeFriends = user.closeFriends || []
+    if (!user.closeFriends.some((id: any) => id.toString() === userId)) {
+      user.closeFriends.push(userId as any)
+      await user.save()
+    }
+    res.json({ closeFriends: user.closeFriends })
+  } catch (error: any) {
+    res.status(500).json({ message: error.message })
+  }
+}
+
+export const removeCloseFriend = async (req: AuthRequest, res: Response) => {
+  try {
+    const { userId } = req.params
+    const user = await User.findById(req.user._id)
+    if (!user) return res.status(404).json({ message: 'User not found' })
+    user.closeFriends = (user.closeFriends || []).filter((id: any) => id.toString() !== userId)
+    await user.save()
+    res.json({ closeFriends: user.closeFriends })
+  } catch (error: any) {
+    res.status(500).json({ message: error.message })
+  }
+}
+

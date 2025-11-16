@@ -1,55 +1,41 @@
 import { useNavigate } from 'react-router-dom'
-import { useState, useRef, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useSelector } from 'react-redux'
 import { RootState } from '../../store'
-import { debounce } from '../../utils/helpers'
-import api from '../../services/api'
 
 export default function Header() {
   const navigate = useNavigate()
   const { user } = useSelector((state: RootState) => state.auth)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [showSearch, setShowSearch] = useState(false)
-  const [searchResults, setSearchResults] = useState<any>(null)
-  const [isSearching, setIsSearching] = useState(false)
-  const searchRef = useRef<HTMLDivElement>(null)
-
-  const handleSearch = debounce(async (query: string) => {
-    if (!query.trim()) {
-      setSearchResults(null)
-      return
-    }
-
-    setIsSearching(true)
-    try {
-      const response = await api.get(`/discover/search?q=${encodeURIComponent(query)}`)
-      setSearchResults(response.data)
-    } catch (error) {
-      console.error('Search error:', error)
-      setSearchResults(null)
-    } finally {
-      setIsSearching(false)
-    }
-  }, 300)
+  const [quietActive, setQuietActive] = useState(false)
+  const [checked, setChecked] = useState(false)
 
   useEffect(() => {
-    if (searchQuery) {
-      handleSearch(searchQuery)
-    } else {
-      setSearchResults(null)
-    }
-  }, [searchQuery])
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
-        setShowSearch(false)
-        setSearchQuery('')
-        setSearchResults(null)
+    const loadQuiet = async () => {
+      try {
+        const res = await fetch((import.meta as any).env.VITE_API_URL ? `${(import.meta as any).env.VITE_API_URL}/users/settings` : '/api/users/settings', {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token') || ''}` },
+          credentials: 'include',
+        })
+        const data = await res.json()
+        const q = data?.notifications?.quietHours
+        if (q?.enabled && q.start && q.end) {
+          const now = new Date()
+          const [sh, sm] = q.start.split(':').map((n: string) => parseInt(n, 10))
+          const [eh, em] = q.end.split(':').map((n: string) => parseInt(n, 10))
+          const start = new Date(now); start.setHours(sh, sm || 0, 0, 0)
+          const end = new Date(now); end.setHours(eh, em || 0, 0, 0)
+          const active = end <= start ? (now >= start || now <= end) : (now >= start && now <= end)
+          setQuietActive(active)
+        } else {
+          setQuietActive(false)
+        }
+      } catch {
+        setQuietActive(false)
+      } finally {
+        setChecked(true)
       }
     }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
+    loadQuiet()
   }, [])
 
   return (
@@ -60,91 +46,7 @@ export default function Header() {
           <h1 className="text-white text-xl font-bold cursor-pointer" onClick={() => navigate('/')}>MOXE</h1>
         </div>
         
-        {showSearch ? (
-          <div ref={searchRef} className="flex-1 relative">
-            <div className="relative">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search..."
-                className="w-full bg-white/20 text-white placeholder-white/70 rounded-lg px-4 py-2 pr-10 focus:outline-none focus:ring-2 focus:ring-white/50"
-                autoFocus
-              />
-              <button
-                onClick={() => {
-                  setShowSearch(false)
-                  setSearchQuery('')
-                  setSearchResults(null)
-                }}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-white/70 hover:text-white"
-              >
-                <i className="fas fa-times"></i>
-              </button>
-            </div>
-            
-            {searchResults && (
-              <div className="absolute top-full left-0 right-0 mt-2 bg-medium-gray rounded-lg shadow-xl max-h-96 overflow-y-auto">
-                {isSearching ? (
-                  <div className="p-4 text-center text-text-gray">
-                    <i className="fas fa-spinner fa-spin"></i> Searching...
-                  </div>
-                ) : (
-                  <>
-                    {searchResults.posts?.length > 0 && (
-                      <div className="p-2">
-                        <h3 className="text-text-gray text-xs font-semibold px-2 py-1">Posts</h3>
-                        {searchResults.posts.slice(0, 5).map((post: any) => (
-                          <div
-                            key={post._id}
-                            onClick={() => {
-                              navigate('/')
-                              setShowSearch(false)
-                            }}
-                            className="p-2 hover:bg-light-gray/20 rounded cursor-pointer"
-                          >
-                            <p className="text-white text-sm line-clamp-2">{post.content?.text}</p>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    {searchResults.users?.length > 0 && (
-                      <div className="p-2 border-t border-light-gray/20">
-                        <h3 className="text-text-gray text-xs font-semibold px-2 py-1">People</h3>
-                        {searchResults.users.slice(0, 5).map((user: any) => (
-                          <div
-                            key={user._id}
-                            onClick={() => {
-                              navigate(`/profile/${user._id}`)
-                              setShowSearch(false)
-                            }}
-                            className="p-2 hover:bg-light-gray/20 rounded cursor-pointer flex items-center gap-2"
-                          >
-                            <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white text-xs">
-                              {user.profile?.fullName?.charAt(0) || 'U'}
-                            </div>
-                            <span className="text-white text-sm">{user.profile?.fullName || user.phone}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    {!isSearching && (!searchResults.posts?.length && !searchResults.users?.length) && (
-                      <div className="p-4 text-center text-text-gray text-sm">No results found</div>
-                    )}
-                  </>
-                )}
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="flex items-center gap-4">
-            <button
-              className="text-white text-lg hover:text-accent transition-colors"
-              onClick={() => setShowSearch(true)}
-              title="Search"
-            >
-              <i className="fas fa-search"></i>
-            </button>
+        <div className="flex items-center gap-4">
             <button 
               className="text-white text-lg hover:text-accent transition-colors"
               onClick={() => navigate('/create-post')}
@@ -158,6 +60,16 @@ export default function Header() {
               title="Notifications"
             >
               <i className="fas fa-bell"></i>
+              {checked && quietActive && (
+                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-warning rounded-full border-2 border-secondary" title="Quiet hours active"></span>
+              )}
+            </button>
+            <button
+              className="text-white text-lg hover:text-accent transition-colors"
+              onClick={() => navigate('/qr/scan')}
+              title="Scan QR"
+            >
+              <i className="fas fa-qrcode"></i>
             </button>
             <button
               className="text-white text-lg hover:text-accent transition-colors"
@@ -174,8 +86,8 @@ export default function Header() {
               <i className="fas fa-user-circle"></i>
             </button>
           </div>
-        )}
       </div>
     </header>
   )
 }
+

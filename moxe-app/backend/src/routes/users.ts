@@ -11,6 +11,9 @@ import {
   removeTrustedContact,
   getTrustedContacts,
   getSuggestions,
+  getCloseFriends,
+  addCloseFriend,
+  removeCloseFriend,
 } from '../controllers/userController'
 import { updateSubscription as updateSub, getSubscriptionStatus } from '../controllers/subscriptionController'
 import { messageBlockedUser, viewProfileAnonymously, viewStoryAnonymously } from '../controllers/premiumController'
@@ -39,6 +42,9 @@ router.post('/follow/:userId', authenticate, followUser)
 router.post('/unfollow/:userId', authenticate, unfollowUser)
 router.get('/followers', authenticate, getFollowers)
 router.get('/suggestions', authenticate, getSuggestions)
+router.get('/close-friends', authenticate, getCloseFriends)
+router.post('/close-friends', authenticate, addCloseFriend)
+router.delete('/close-friends/:userId', authenticate, removeCloseFriend)
 router.put('/subscription', authenticate, updateSub)
 router.get('/subscription/status', authenticate, getSubscriptionStatus)
 router.post('/trusted-contacts', authenticate, addTrustedContact)
@@ -67,5 +73,6 @@ router.get('/premium/profile/:profileUserId/anonymous', authenticate, viewProfil
 router.get('/premium/story/:storyId/anonymous', authenticate, viewStoryAnonymously)
 
 export default router
+
 
 

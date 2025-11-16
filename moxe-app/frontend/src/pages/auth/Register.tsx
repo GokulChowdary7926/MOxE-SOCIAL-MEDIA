@@ -5,6 +5,7 @@ import { AppDispatch } from '../../store'
 import { requestOTP, setPhoneNumber } from '../../store/slices/authSlice'
 
 export default function Register() {
+  const [countryCode, setCountryCode] = useState('+91')
   const [phone, setPhone] = useState('')
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -57,8 +58,9 @@ export default function Register() {
     }
 
     try {
-      const result = await dispatch(requestOTP(cleaned)).unwrap()
-      dispatch(setPhoneNumber(cleaned))
+      const fullPhone = `${countryCode}${cleaned}`
+      const result = await dispatch(requestOTP(fullPhone)).unwrap()
+      dispatch(setPhoneNumber(fullPhone))
       
       // If OTP is returned (development mode), show it to user
       if (result.otp) {
@@ -91,7 +93,7 @@ export default function Register() {
           <p className="text-text-gray">Join the privacy-first social platform</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-medium-gray rounded-2xl p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="bg-medium-gray rounded-2xl p-6 space-y-4 shadow-lg shadow-black/20">
           <div>
             <label htmlFor="name" className="block text-sm font-medium mb-2">
               Full Name *
@@ -119,21 +121,42 @@ export default function Register() {
               placeholder="Enter your email"
               className="w-full bg-light-gray border-none rounded-lg px-4 py-3 text-white placeholder-text-gray focus:outline-none focus:ring-2 focus:ring-primary"
             />
+            <p className="text-xs text-text-gray mt-1">
+              Sign-in is phone + OTP only. Email is optional for business/creator.
+            </p>
           </div>
 
           <div>
             <label htmlFor="phone" className="block text-sm font-medium mb-2">
               Phone Number *
             </label>
-            <input
-              type="tel"
-              id="phone"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="Enter your phone number"
-              className="w-full bg-light-gray border-none rounded-lg px-4 py-3 text-white placeholder-text-gray focus:outline-none focus:ring-2 focus:ring-primary"
-              required
-            />
+            <div className="flex gap-2">
+              <select
+                aria-label="Country code"
+                value={countryCode}
+                onChange={(e) => setCountryCode(e.target.value)}
+                className="w-28 bg-light-gray border-none rounded-lg px-3 py-3 text-white focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                <option value="+91">+91</option>
+                <option value="+1">+1</option>
+                <option value="+44">+44</option>
+                <option value="+61">+61</option>
+              </select>
+              <input
+                type="tel"
+                id="phone"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="Phone number"
+                className="flex-1 bg-light-gray border-none rounded-lg px-4 py-3 text-white placeholder-text-gray focus:outline-none focus:ring-2 focus:ring-primary"
+                required
+                inputMode="numeric"
+                autoComplete="tel"
+              />
+            </div>
+            <p className="text-xs text-text-gray mt-1">
+              You can create up to 2 accounts per phone number.
+            </p>
           </div>
 
           <div>
@@ -154,7 +177,7 @@ export default function Register() {
               <p className="text-xs text-text-gray mt-1">
                 {accountsRemaining > 0 
                   ? `You can create ${accountsRemaining} more account(s) with this phone number.`
-                  : 'You have reached the maximum of 3 accounts per phone number.'
+                  : 'You have reached the maximum of 2 accounts per phone number.'
                 }
               </p>
             )}
@@ -187,10 +210,14 @@ export default function Register() {
               Sign in
             </button>
           </p>
+          <p className="text-center text-xs text-text-gray/70">
+            By creating an account, you agree to our Terms & Privacy Policy.
+          </p>
         </form>
       </div>
     </div>
   )
 }
+
 
 

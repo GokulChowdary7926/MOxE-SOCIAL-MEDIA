@@ -19,6 +19,10 @@ export default function PostMenu({ postId, authorId, onPostDeleted, onPostArchiv
   const navigate = useNavigate()
   const { user } = useSelector((state: RootState) => state.auth)
   const isOwnPost = user?._id === authorId
+  const [showCollections, setShowCollections] = useState(false)
+  const [collections, setCollections] = useState<any[]>([])
+  const [selectedCollectionId, setSelectedCollectionId] = useState<string>('')
+  const [newCollectionName, setNewCollectionName] = useState('')
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -166,6 +170,33 @@ export default function PostMenu({ postId, authorId, onPostDeleted, onPostArchiv
     }
   }
 
+  const handleAddToCollection = async () => {
+    try {
+      // Load collections and open modal
+      const listRes = await fetch((import.meta as any).env.VITE_API_URL ? `${(import.meta as any).env.VITE_API_URL}/collections` : '/api/collections', {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token') || ''}` },
+        credentials: 'include',
+      }).then(res => res.json())
+      setCollections(listRes.collections || [])
+      setSelectedCollectionId(listRes.collections?.[0]?._id || '')
+      setShowCollections(true)
+    } catch (error) {
+      console.error('Failed to load collections:', error)
+      alert('Failed to load collections')
+    }
+  }
+
+  const handleShareToStory = async () => {
+    try {
+      await api.post(`/stories/share/${postId}`)
+      setIsOpen(false)
+      alert('Shared to your story!')
+    } catch (error) {
+      console.error('Failed to share to story:', error)
+      alert('Failed to share to story. Please try again.')
+    }
+  }
+
   const handleShareToFacebook = () => {
     const postUrl = `${window.location.origin}/post/${postId}`
     window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(postUrl)}`, '_blank')
@@ -262,15 +293,12 @@ export default function PostMenu({ postId, authorId, onPostDeleted, onPostArchiv
                   <span className="text-white text-sm font-medium">Save</span>
                 </button>
                 <button
-                  onClick={() => {
-                    setIsOpen(false)
-                    alert('QR code feature coming soon!')
-                  }}
+                  onClick={handleShareToStory}
                   className="bg-dark-gray rounded-xl p-4 flex flex-col items-center gap-2 border border-light-gray/20 active:bg-light-gray/20 transition-colors touch-manipulation"
                   style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
                 >
-                  <i className="fas fa-qrcode text-white text-xl"></i>
-                  <span className="text-white text-sm font-medium">QR code</span>
+                  <i className="fas fa-paper-plane text-white text-xl"></i>
+                  <span className="text-white text-sm font-medium">Share to Story</span>
                 </button>
               </div>
 
@@ -287,6 +315,14 @@ export default function PostMenu({ postId, authorId, onPostDeleted, onPostArchiv
                   <span className="flex-1 text-left text-sm">Share to Facebook</span>
                   <i className="fas fa-chevron-right text-text-gray text-xs"></i>
                 </button>
+              <button
+                onClick={handleAddToCollection}
+                className="w-full px-4 py-3 flex items-center gap-3 text-white hover:bg-light-gray/10 active:bg-light-gray/20 transition-colors touch-manipulation"
+                style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
+              >
+                <i className="fas fa-folder-plus text-white text-lg w-8 flex-shrink-0"></i>
+                <span className="flex-1 text-left text-sm">Add to Collection</span>
+              </button>
 
                 <button
                   onClick={handleRemoveFromGrid}
@@ -393,6 +429,15 @@ export default function PostMenu({ postId, authorId, onPostDeleted, onPostArchiv
             // OTHER USER'S POST MENU - Dropdown Style
             <div className="absolute right-0 top-10 z-50 bg-medium-gray rounded-xl shadow-2xl min-w-[200px] overflow-hidden border border-light-gray/20">
               <button
+                onClick={handleShareToStory}
+                className="w-full px-4 py-3 text-left text-white hover:bg-light-gray/20 active:bg-light-gray/30 transition-colors flex items-center gap-3 touch-manipulation"
+                style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
+                disabled={isLoading}
+              >
+                <i className="fas fa-paper-plane text-primary-light text-lg w-5"></i>
+                <span className="text-sm">Share to Story</span>
+              </button>
+              <button
                 onClick={handleHide}
                 className="w-full px-4 py-3 text-left text-white hover:bg-light-gray/20 active:bg-light-gray/30 transition-colors flex items-center gap-3 touch-manipulation"
                 style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}
@@ -441,6 +486,106 @@ export default function PostMenu({ postId, authorId, onPostDeleted, onPostArchiv
           )}
         </>
       )}
+
+      {/* Collections Selector Modal */}
+      {showCollections && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <div className="bg-medium-gray rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md max-h-[85vh] overflow-hidden">
+            <div className="flex items-center justify-between p-4 border-b border-light-gray/20">
+              <h3 className="text-white font-semibold">Add to Collection</h3>
+              <button
+                onClick={() => setShowCollections(false)}
+                className="w-8 h-8 rounded-full bg-dark-gray hover:bg-light-gray flex items-center justify-center text-white transition-colors"
+              >
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+            <div className="p-4 space-y-3">
+              {collections.length > 0 ? (
+                <div className="space-y-2">
+                  {collections.map((c: any) => (
+                    <label key={c._id} className="flex items-center gap-3 bg-dark-gray rounded-lg p-2 cursor-pointer hover:bg-light-gray/20">
+                      <input
+                        type="radio"
+                        name="collection"
+                        checked={selectedCollectionId === c._id}
+                        onChange={() => setSelectedCollectionId(c._id)}
+                      />
+                      <div className="flex-1">
+                        <div className="text-white text-sm font-medium">{c.name}</div>
+                        <div className="text-xs text-text-gray">{c.postCount || 0} posts</div>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-xs text-text-gray">No collections yet.</div>
+              )}
+              <div className="border-t border-light-gray/20 pt-3">
+                <label className="block text-xs text-text-gray mb-1">Create new</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newCollectionName}
+                    onChange={(e) => setNewCollectionName(e.target.value)}
+                    placeholder="Collection name"
+                    className="flex-1 bg-dark-gray border-none rounded-lg px-3 py-2 text-white text-sm"
+                  />
+                  <button
+                    onClick={async () => {
+                      if (!newCollectionName.trim()) return
+                      try {
+                        const res = await fetch((import.meta as any).env.VITE_API_URL ? `${(import.meta as any).env.VITE_API_URL}/collections` : '/api/collections', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token') || ''}` },
+                          credentials: 'include',
+                          body: JSON.stringify({ name: newCollectionName.trim(), isPrivate: true }),
+                        }).then(res => res.json())
+                        setCollections([res.collection, ...collections])
+                        setSelectedCollectionId(res.collection._id)
+                        setNewCollectionName('')
+                      } catch {
+                        alert('Failed to create collection')
+                      }
+                    }}
+                    className="bg-primary text-white px-3 rounded-lg text-sm font-semibold hover:bg-primary-dark transition-colors"
+                  >
+                    Create
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div className="p-4 border-t border-light-gray/20">
+              <button
+                onClick={async () => {
+                  try {
+                    let targetId = selectedCollectionId
+                    if (!targetId && collections[0]?._id) targetId = collections[0]._id
+                    if (!targetId) {
+                      alert('Select or create a collection')
+                      return
+                    }
+                    await fetch((import.meta as any).env.VITE_API_URL ? `${(import.meta as any).env.VITE_API_URL}/collections/${targetId}/add/${postId}` : `/api/collections/${targetId}/add/${postId}`, {
+                      method: 'POST',
+                      headers: { 'Authorization': `Bearer ${localStorage.getItem('token') || ''}` },
+                      credentials: 'include',
+                    })
+                    setShowCollections(false)
+                    setIsOpen(false)
+                    alert('Added to collection')
+                  } catch {
+                    alert('Failed to add to collection')
+                  }
+                }}
+                className="w-full bg-primary text-white py-2.5 rounded-lg font-semibold hover:bg-primary-dark transition-colors"
+              >
+                Add
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
+

@@ -1,4 +1,5 @@
 import { formatDistanceToNow, format } from 'date-fns'
+import { DEFAULT_LOCALE, DEFAULT_CURRENCY } from './constants'
 
 export const formatTimeAgo = (date: Date | string): string => {
   try {
@@ -15,6 +16,22 @@ export const formatDate = (date: Date | string, formatStr: string = 'MMM dd, yyy
     return format(dateObj, formatStr)
   } catch {
     return ''
+  }
+}
+
+export const formatCurrencyINR = (amount: number, currency: string = DEFAULT_CURRENCY, locale: string = DEFAULT_LOCALE): string => {
+  try {
+    return new Intl.NumberFormat(locale, { style: 'currency', currency, maximumFractionDigits: 0 }).format(amount)
+  } catch {
+    return `₹${amount}`
+  }
+}
+
+export const formatNumberIN = (num: number, locale: string = DEFAULT_LOCALE): string => {
+  try {
+    return new Intl.NumberFormat(locale).format(num)
+  } catch {
+    return String(num)
   }
 }
 
@@ -47,8 +64,10 @@ export const validateEmail = (email: string): boolean => {
 }
 
 export const validatePhone = (phone: string): boolean => {
-  const cleaned = phone.replace(/\D/g, '')
-  return cleaned.length >= 10 && cleaned.length <= 15
+  // India mobile validation: 10 digits starting with 6-9, optional +91 or 0 prefix
+  const cleaned = phone.replace(/\s+/g, '')
+  const regex = /^(?:\+91|0)?[6-9]\d{9}$/
+  return regex.test(cleaned)
 }
 
 export const debounce = <T extends (...args: any[]) => any>(

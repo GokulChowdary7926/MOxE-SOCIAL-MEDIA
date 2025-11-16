@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useSelector } from 'react-redux'
 import { RootState } from '../../store'
-import api from '../../services/api'
+import { chatAPI } from '../../services/api'
 
 interface GroupChatModalProps {
   isOpen: boolean
@@ -23,8 +23,10 @@ export default function GroupChatModal({ isOpen, onClose, onGroupCreated }: Grou
     if (!searchQuery.trim()) return
 
     try {
-      const response = await api.get(`/users/search?q=${encodeURIComponent(searchQuery)}`)
-      setSearchResults(response.data.users || [])
+      const response = await fetch(`/api/users/search?q=${encodeURIComponent(searchQuery)}`, {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token') || ''}` }
+      }).then(res => res.json())
+      setSearchResults(response.users || [])
     } catch (error) {
       console.error('Failed to search users:', error)
     }
@@ -46,10 +48,7 @@ export default function GroupChatModal({ isOpen, onClose, onGroupCreated }: Grou
 
     setIsLoading(true)
     try {
-      await api.post('/chat/groups', {
-        name: groupName,
-        participants: selectedUsers,
-      })
+      await chatAPI.createGroup(groupName, selectedUsers)
       onGroupCreated()
       onClose()
       setGroupName('')

@@ -7,12 +7,12 @@ export default function LanguageRegionSettings() {
   const [isLoading, setIsLoading] = useState(false)
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const [settings, setSettings] = useState({
-    appLanguage: 'en',
-    contentLanguage: 'auto',
-    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-    dateFormat: 'MM/DD/YYYY',
+    appLanguage: 'en', // default 'en' will be shown as English (India) in region
+    contentLanguage: 'hi',
+    timezone: 'Asia/Kolkata',
+    dateFormat: 'DD/MM/YYYY',
     timeFormat: '12h',
-    currency: 'USD',
+    currency: 'INR',
   })
 
   useEffect(() => {
@@ -60,15 +60,16 @@ export default function LanguageRegionSettings() {
   ]
 
   const timezones = [
+    'Asia/Kolkata',
+    'Asia/Dubai',
+    'Asia/Tokyo',
+    'Asia/Shanghai',
+    'Europe/London',
+    'Europe/Paris',
     'America/New_York',
     'America/Chicago',
     'America/Denver',
     'America/Los_Angeles',
-    'Europe/London',
-    'Europe/Paris',
-    'Asia/Tokyo',
-    'Asia/Shanghai',
-    'Asia/Dubai',
     'Australia/Sydney',
   ]
 

@@ -11,6 +11,7 @@ export default function Settings() {
   const { user } = useSelector((state: RootState) => state.auth)
   const { profile } = useSelector((state: RootState) => state.user)
   const [activeTab, setActiveTab] = useState('privacy')
+  const [query, setQuery] = useState('')
   const [privacySettings, setPrivacySettings] = useState({
     invisibleMode: false,
     hideOnlineStatus: false,
@@ -121,6 +122,39 @@ export default function Settings() {
 
   return (
     <div className="p-4 space-y-4 pb-20">
+      {/* Profile Header */}
+      <div className="bg-medium-gray rounded-2xl p-4">
+        <div className="flex items-center gap-4">
+          <div className="w-14 h-14 rounded-full bg-primary/30 flex items-center justify-center text-white text-xl font-bold">
+            {(profile?.profile?.fullName || user?.phone || 'U').toString().charAt(0).toUpperCase()}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-white font-semibold truncate">{profile?.profile?.fullName || 'Your Account'}</div>
+            <div className="text-text-gray text-sm truncate">
+              {user?.phone || (profile as any)?.email || 'Set up your contact info'}
+            </div>
+          </div>
+          <button
+            onClick={() => navigate('/settings/account')}
+            className="px-3 py-1.5 rounded-lg bg-dark-gray text-white text-sm hover:bg-light-gray/20 transition-colors"
+          >
+            Manage
+          </button>
+        </div>
+        {/* Search */}
+        <div className="mt-4">
+          <div className="flex items-center gap-3 bg-dark-gray rounded-xl px-3 py-2">
+            <i className="fas fa-search text-text-gray"></i>
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search settings"
+              className="flex-1 bg-transparent outline-none text-white placeholder-text-gray text-sm"
+            />
+          </div>
+        </div>
+      </div>
+
       <div className="bg-medium-gray rounded-2xl p-4">
         <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
           <i className="fas fa-cog text-primary-light"></i>
@@ -630,99 +664,77 @@ export default function Settings() {
           </div>
         )}
 
-        {/* Enhanced Settings Section */}
-        <div className="bg-medium-gray rounded-2xl p-4 space-y-3 mt-4">
-          <h3 className="text-lg font-semibold text-white mb-4">Account & Privacy</h3>
-          <button
-            onClick={() => navigate('/settings/account')}
-            className="w-full flex items-center justify-between p-3 bg-dark-gray rounded-lg hover:bg-light-gray/20 transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <i className="fas fa-user-cog text-primary text-lg"></i>
-              <span className="text-white font-medium">Account Settings</span>
-            </div>
-            <i className="fas fa-chevron-right text-text-gray"></i>
-          </button>
-          <button
-            onClick={() => navigate('/settings/privacy')}
-            className="w-full flex items-center justify-between p-3 bg-dark-gray rounded-lg hover:bg-light-gray/20 transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <i className="fas fa-shield-alt text-primary text-lg"></i>
-              <span className="text-white font-medium">Privacy Settings</span>
-            </div>
-            <i className="fas fa-chevron-right text-text-gray"></i>
-          </button>
-          <button
-            onClick={() => navigate('/settings/notifications')}
-            className="w-full flex items-center justify-between p-3 bg-dark-gray rounded-lg hover:bg-light-gray/20 transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <i className="fas fa-bell text-primary text-lg"></i>
-              <span className="text-white font-medium">Notification Settings</span>
-            </div>
-            <i className="fas fa-chevron-right text-text-gray"></i>
-          </button>
-          <button
-            onClick={() => navigate('/settings/security')}
-            className="w-full flex items-center justify-between p-3 bg-dark-gray rounded-lg hover:bg-light-gray/20 transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <i className="fas fa-lock text-primary text-lg"></i>
-              <span className="text-white font-medium">Security Settings</span>
-            </div>
-            <i className="fas fa-chevron-right text-text-gray"></i>
-          </button>
-          <button
-            onClick={() => navigate('/settings/blocked-users')}
-            className="w-full flex items-center justify-between p-3 bg-dark-gray rounded-lg hover:bg-light-gray/20 transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <i className="fas fa-user-slash text-primary text-lg"></i>
-              <span className="text-white font-medium">Blocked Users</span>
-            </div>
-            <i className="fas fa-chevron-right text-text-gray"></i>
-          </button>
-          <button
-            onClick={() => navigate('/settings/data-export')}
-            className="w-full flex items-center justify-between p-3 bg-dark-gray rounded-lg hover:bg-light-gray/20 transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <i className="fas fa-download text-primary text-lg"></i>
-              <span className="text-white font-medium">Download Your Data</span>
-            </div>
-            <i className="fas fa-chevron-right text-text-gray"></i>
-          </button>
-          <button
-            onClick={() => navigate('/settings/accessibility')}
-            className="w-full flex items-center justify-between p-3 bg-dark-gray rounded-lg hover:bg-light-gray/20 transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <i className="fas fa-universal-access text-primary text-lg"></i>
-              <span className="text-white font-medium">Accessibility</span>
-            </div>
-            <i className="fas fa-chevron-right text-text-gray"></i>
-          </button>
-          <button
-            onClick={() => navigate('/settings/language-region')}
-            className="w-full flex items-center justify-between p-3 bg-dark-gray rounded-lg hover:bg-light-gray/20 transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <i className="fas fa-globe text-primary text-lg"></i>
-              <span className="text-white font-medium">Language & Region</span>
-            </div>
-            <i className="fas fa-chevron-right text-text-gray"></i>
-          </button>
-          <button
-            onClick={() => navigate('/settings/connected-apps')}
-            className="w-full flex items-center justify-between p-3 bg-dark-gray rounded-lg hover:bg-light-gray/20 transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <i className="fas fa-plug text-primary text-lg"></i>
-              <span className="text-white font-medium">Connected Apps</span>
-            </div>
-            <i className="fas fa-chevron-right text-text-gray"></i>
-          </button>
+        {/* Enhanced Settings Section - grouped & searchable */}
+        <div className="bg-medium-gray rounded-2xl p-4 space-y-6 mt-4">
+          {/* Group 1: Account & Privacy */}
+          <div>
+            <h3 className="text-lg font-semibold text-white mb-3">Account & Privacy</h3>
+            {[
+              { label: 'Account Settings', icon: 'fa-user-cog', to: '/settings/account' },
+              { label: 'Privacy Settings', icon: 'fa-shield-alt', to: '/settings/privacy' },
+              { label: 'Blocked Users', icon: 'fa-user-slash', to: '/settings/blocked-users' },
+            ]
+              .filter(i => i.label.toLowerCase().includes(query.toLowerCase()))
+              .map((i) => (
+                <button
+                  key={i.label}
+                  onClick={() => navigate(i.to)}
+                  className="w-full flex items-center justify-between p-3 bg-dark-gray rounded-lg hover:bg-light-gray/20 transition-colors mb-2"
+                >
+                  <div className="flex items-center gap-3">
+                    <i className={`fas ${i.icon} text-primary text-lg`}></i>
+                    <span className="text-white font-medium">{i.label}</span>
+                  </div>
+                  <i className="fas fa-chevron-right text-text-gray"></i>
+                </button>
+              ))}
+          </div>
+          {/* Group 2: Security & Data */}
+          <div>
+            <h3 className="text-lg font-semibold text-white mb-3">Security & Data</h3>
+            {[
+              { label: 'Security Settings', icon: 'fa-lock', to: '/settings/security' },
+              { label: 'Download Your Data', icon: 'fa-download', to: '/settings/data-export' },
+              { label: 'Connected Apps', icon: 'fa-plug', to: '/settings/connected-apps' },
+            ]
+              .filter(i => i.label.toLowerCase().includes(query.toLowerCase()))
+              .map((i) => (
+                <button
+                  key={i.label}
+                  onClick={() => navigate(i.to)}
+                  className="w-full flex items-center justify-between p-3 bg-dark-gray rounded-lg hover:bg-light-gray/20 transition-colors mb-2"
+                >
+                  <div className="flex items-center gap-3">
+                    <i className={`fas ${i.icon} text-primary text-lg`}></i>
+                    <span className="text-white font-medium">{i.label}</span>
+                  </div>
+                  <i className="fas fa-chevron-right text-text-gray"></i>
+                </button>
+              ))}
+          </div>
+          {/* Group 3: App Preferences */}
+          <div>
+            <h3 className="text-lg font-semibold text-white mb-3">App Preferences</h3>
+            {[
+              { label: 'Notification Settings', icon: 'fa-bell', to: '/settings/notifications' },
+              { label: 'Accessibility', icon: 'fa-universal-access', to: '/settings/accessibility' },
+              { label: 'Language & Region', icon: 'fa-globe', to: '/settings/language-region' },
+            ]
+              .filter(i => i.label.toLowerCase().includes(query.toLowerCase()))
+              .map((i) => (
+                <button
+                  key={i.label}
+                  onClick={() => navigate(i.to)}
+                  className="w-full flex items-center justify-between p-3 bg-dark-gray rounded-lg hover:bg-light-gray/20 transition-colors mb-2"
+                >
+                  <div className="flex items-center gap-3">
+                    <i className={`fas ${i.icon} text-primary text-lg`}></i>
+                    <span className="text-white font-medium">{i.label}</span>
+                  </div>
+                  <i className="fas fa-chevron-right text-text-gray"></i>
+                </button>
+              ))}
+          </div>
         </div>
       </div>
     </div>

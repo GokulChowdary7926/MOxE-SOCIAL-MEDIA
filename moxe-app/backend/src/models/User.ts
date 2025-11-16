@@ -5,6 +5,8 @@ export interface IUser extends Document {
   email?: string // Optional, for business/creator accounts
   accountType: 'personal' | 'business' | 'creator'
   accountsRemaining: number
+  username?: string
+  usernameChangeAllowedAt?: Date
   profile: {
     username?: string
     fullName?: string
@@ -194,6 +196,17 @@ const UserSchema = new Schema<IUser>({
   email: { type: String, sparse: true }, // Optional, for business/creator accounts
   accountType: { type: String, enum: ['personal', 'business', 'creator'], required: true },
   accountsRemaining: { type: Number, default: 1 },
+  username: {
+    type: String,
+    trim: true,
+    lowercase: true,
+    unique: true,
+    sparse: true,
+    minlength: 3,
+    maxlength: 30,
+    match: /^(?=.{3,30}$)(?!.*\.\.)(?!.*\.$)[A-Za-z0-9._]+$/,
+  },
+  usernameChangeAllowedAt: { type: Date, default: Date.now },
   profile: {
     username: { type: String, sparse: true, unique: true },
     fullName: String,
@@ -366,4 +379,19 @@ const UserSchema = new Schema<IUser>({
 // Compound index for phone + accountType to allow multiple accounts per phone
 UserSchema.index({ phone: 1, accountType: 1 })
 
+// Keep root username in sync with profile.username if one is present
+UserSchema.pre('save', function(next) {
+  // @ts-ignore
+  const self = this as any
+  if (!self.username && self.profile?.username) {
+    self.username = String(self.profile.username).toLowerCase()
+  }
+  if (self.username && (!self.profile || !self.profile.username)) {
+    self.profile = self.profile || {}
+    self.profile.username = self.username
+  }
+  next()
+})
+
 export default mongoose.model<IUser>('User', UserSchema)
+

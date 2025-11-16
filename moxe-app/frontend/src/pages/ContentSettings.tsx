@@ -500,6 +500,14 @@ export default function ContentSettings() {
               <option value="premium">👑 Premium</option>
               <option value="thick">💎 Thick</option>
             </select>
+            <div className="mt-2">
+              <ToggleSwitch
+                checked={settings.stories.defaultVisibility === 'close_friends'}
+                onChange={(val) => updateSetting('stories', 'defaultVisibility', val ? 'close_friends' : 'all')}
+                label="Default to Close Friends"
+                description="Make Close Friends the default audience for new stories"
+              />
+            </div>
           </div>
 
           {/* Expiration */}
@@ -702,4 +710,5 @@ export default function ContentSettings() {
     </div>
   )
 }
+
 

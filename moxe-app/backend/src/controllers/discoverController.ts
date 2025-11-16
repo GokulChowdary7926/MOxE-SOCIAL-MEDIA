@@ -2,6 +2,7 @@ import { Response } from 'express'
 import { AuthRequest } from '../middleware/auth'
 import Post from '../models/Post'
 import User from '../models/User'
+import mongoose from 'mongoose'
 
 export const getForYouFeed = async (req: AuthRequest, res: Response) => {
   try {
@@ -112,11 +113,12 @@ export const search = async (req: AuthRequest, res: Response) => {
       .select('profile followers')
       .limit(10)
 
-    // Search posts
+    // Search posts (caption keywords + hashtag text)
     const posts = await Post.find({
       $or: [
         { 'content.text': { $regex: query, $options: 'i' } },
-        { hashtags: { $in: [new RegExp(query, 'i')] } },
+        { 'content.hashtags': { $in: [new RegExp(query, 'i')] } },
+        { 'location.name': { $regex: query, $options: 'i' } },
       ],
       isArchived: false,
       isHidden: false,
@@ -124,10 +126,18 @@ export const search = async (req: AuthRequest, res: Response) => {
       .populate('author', 'profile subscription')
       .limit(20)
 
-    // Search hashtags
-    const hashtags = await Post.distinct('hashtags', {
-      hashtags: { $in: [new RegExp(query, 'i')] },
+    // Search hashtags (distinct)
+    const hashtags = await Post.distinct('content.hashtags', {
+      'content.hashtags': { $in: [new RegExp(query, 'i')] },
     })
+
+    // Search locations (distinct location names if present)
+    const locations = await Post.aggregate([
+      { $match: { 'location.name': { $regex: query, $options: 'i' } } },
+      { $group: { _id: '$location.name', count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+      { $limit: 10 },
+    ])
 
     res.json({
       users: users.map((u: any) => ({
@@ -139,8 +149,9 @@ export const search = async (req: AuthRequest, res: Response) => {
       hashtags: hashtags.slice(0, 10).map((tag: string) => ({
         _id: tag,
         name: tag,
-        postCount: 0, // Would calculate in real implementation
+        postCount: 0, // Could be calculated if needed
       })),
+      locations: locations.map((l: any) => ({ name: l._id, count: l.count })),
     })
   } catch (error: any) {
     res.status(500).json({ message: error.message })

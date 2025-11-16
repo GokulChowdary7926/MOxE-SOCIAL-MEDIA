@@ -2,10 +2,12 @@ import { useState, useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
 import { AppDispatch, RootState } from '../../store'
-import { verifyOTP, register, login } from '../../store/slices/authSlice'
+import { verifyOTP, register, login, requestOTP } from '../../store/slices/authSlice'
 
 export default function OTPVerification() {
   const [otp, setOtp] = useState('')
+  const [secondsLeft, setSecondsLeft] = useState(30)
+  const [resending, setResending] = useState(false)
   const dispatch = useDispatch<AppDispatch>()
   const navigate = useNavigate()
   const { phoneNumber, isLoading, error } = useSelector((state: RootState) => state.auth)
@@ -16,6 +18,25 @@ export default function OTPVerification() {
     const regData = localStorage.getItem('registrationData')
     setIsRegistering(!!regData)
   }, [])
+
+  useEffect(() => {
+    if (secondsLeft <= 0) return
+    const t = setTimeout(() => setSecondsLeft((s) => s - 1), 1000)
+    return () => clearTimeout(t)
+  }, [secondsLeft])
+
+  const handleResend = async () => {
+    if (secondsLeft > 0 || !phoneNumber) return
+    try {
+      setResending(true)
+      await (dispatch as any)(requestOTP(phoneNumber)).unwrap()
+      setSecondsLeft(30)
+    } catch (e) {
+      // noop; error flows through existing UI
+    } finally {
+      setResending(false)
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -39,7 +60,6 @@ export default function OTPVerification() {
           otp,
           name: regData.name,
           accountType: regData.accountType,
-          email: regData.email,
         })).unwrap()
         localStorage.removeItem('registrationData')
         
@@ -74,9 +94,20 @@ export default function OTPVerification() {
             Enter the 6-digit code sent to<br />
             <span className="text-white font-medium">{phoneNumber}</span>
           </p>
+          <p className="text-xs text-text-gray mt-2">
+            Didn’t get a code?{' '}
+            <button
+              type="button"
+              onClick={handleResend}
+              disabled={secondsLeft > 0 || resending}
+              className="text-primary-light disabled:opacity-50"
+            >
+              {resending ? 'Sending...' : secondsLeft > 0 ? `Resend in ${secondsLeft}s` : 'Resend now'}
+            </button>
+          </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-medium-gray rounded-2xl p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="bg-medium-gray rounded-2xl p-6 space-y-4 shadow-lg shadow-black/20">
           {error && (
             <div className="bg-danger/20 border border-danger text-danger p-3 rounded-lg text-sm">
               {error}
@@ -119,5 +150,6 @@ export default function OTPVerification() {
     </div>
   )
 }
+
 
 

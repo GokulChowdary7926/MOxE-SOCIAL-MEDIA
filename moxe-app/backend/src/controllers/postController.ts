@@ -191,6 +191,48 @@ export const getFeed = async (req: AuthRequest, res: Response) => {
       finalPosts = posts
     }
 
+    // Rank posts using a simple scoring function
+    // Factors: recency, engagement, relationship strength, content type preference
+    try {
+      const now = Date.now()
+      const userPreferences = {
+        reelBoost: 1.15,
+        storyBoost: 1.05,
+        liveBoost: 1.2,
+        postBoost: 1.0,
+      }
+      const followingSet = new Set(followingIds)
+
+      finalPosts = finalPosts
+        .map((p: any) => {
+          const createdAt = new Date(p.createdAt || Date.now()).getTime()
+          const hoursSince = Math.max(1, (now - createdAt) / (1000 * 60 * 60))
+          const recencyScore = 1 / Math.pow(hoursSince, 0.6) // decays with time
+
+          const likes = p.engagement?.likes?.length || 0
+          const comments = p.comments?.length || 0
+          const shares = p.engagement?.shares || 0
+          const engagementScore = (likes * 1 + comments * 2 + shares * 3) / 100
+
+          const authorId = p?.author?._id?.toString?.() || p?.author?.toString?.() || ''
+          const relationshipScore = followingSet.has(authorId) ? 0.2 : 0
+
+          const type = p.content?.type || 'post'
+          const typeBoost =
+            type === 'reel' ? userPreferences.reelBoost :
+            type === 'story' ? userPreferences.storyBoost :
+            type === 'live' ? userPreferences.liveBoost :
+            userPreferences.postBoost
+
+          const score = (recencyScore + engagementScore + relationshipScore) * typeBoost
+          return { ...p, _rankScore: score }
+        })
+        .sort((a: any, b: any) => (b._rankScore || 0) - (a._rankScore || 0))
+        .slice(0, 50)
+    } catch (rankErr) {
+      console.warn('Ranking failed, returning chronological feed:', (rankErr as any)?.message)
+    }
+
     // Get stories for feed (include user's own stories)
     let stories: any[] = []
     try {

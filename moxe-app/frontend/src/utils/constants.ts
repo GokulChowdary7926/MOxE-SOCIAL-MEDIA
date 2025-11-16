@@ -33,3 +33,11 @@ export const NOTIFICATION_TYPES = {
   LIVE: 'live',
 } as const
 
+// Regional defaults (India)
+export const DEFAULT_REGION = 'IN'
+export const DEFAULT_LOCALE = 'en-IN'
+export const DEFAULT_TIMEZONE = 'Asia/Kolkata'
+export const DEFAULT_CURRENCY = 'INR'
+export const DEFAULT_MAP_CENTER: [number, number] = [20.5937, 78.9629] // India centroid
+export const DEFAULT_MAP_ZOOM = 5
+

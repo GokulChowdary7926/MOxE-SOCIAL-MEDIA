@@ -14,6 +14,7 @@ export const getUserSettings = async (req: AuthRequest, res: Response) => {
     res.json({
       email: user.email,
       privacy: user.settings?.privacy || {},
+      contentSettings: user.settings?.contentSettings || {},
       notifications: {
         push: user.settings?.notifications?.push || {
           enabled: true,
@@ -35,6 +36,14 @@ export const getUserSettings = async (req: AuthRequest, res: Response) => {
           enabled: true,
           sound: true,
           vibration: true,
+        },
+        quietHours: user.settings?.notifications?.quietHours || {
+          enabled: false,
+          start: '22:00',
+          end: '07:00',
+        },
+        grouping: user.settings?.notifications?.grouping || {
+          byType: true,
         },
       },
       security: user.settings?.security || {},
@@ -72,12 +81,49 @@ export const updateUserSettings = async (req: AuthRequest, res: Response) => {
       user.settings.privacy = { ...user.settings.privacy, ...privacy }
     }
 
+    // Update contentSettings (defaults for posts/reels/stories/live)
+    if (req.body.contentSettings) {
+      if (!user.settings.contentSettings) {
+        user.settings.contentSettings = {} as any
+      }
+      const incoming = req.body.contentSettings
+      user.settings.contentSettings = { ...user.settings.contentSettings, ...incoming }
+      if (incoming.posts) {
+        user.settings.contentSettings.posts = { ...(user.settings.contentSettings.posts || {}), ...incoming.posts }
+      }
+      if (incoming.reels) {
+        user.settings.contentSettings.reels = { ...(user.settings.contentSettings.reels || {}), ...incoming.reels }
+      }
+      if (incoming.stories) {
+        user.settings.contentSettings.stories = { ...(user.settings.contentSettings.stories || {}), ...incoming.stories }
+      }
+      if (incoming.live) {
+        user.settings.contentSettings.live = { ...(user.settings.contentSettings.live || {}), ...incoming.live }
+      }
+    }
+
     // Update notification settings
     if (notifications) {
       if (!user.settings.notifications) {
         user.settings.notifications = {} as any
       }
+      // Merge nested structures safely
       user.settings.notifications = { ...user.settings.notifications, ...notifications }
+      if (notifications.push) {
+        user.settings.notifications.push = { ...(user.settings.notifications.push || {}), ...notifications.push }
+      }
+      if (notifications.email) {
+        user.settings.notifications.email = { ...(user.settings.notifications.email || {}), ...notifications.email }
+      }
+      if (notifications.inApp) {
+        user.settings.notifications.inApp = { ...(user.settings.notifications.inApp || {}), ...notifications.inApp }
+      }
+      if (notifications.quietHours) {
+        user.settings.notifications.quietHours = { ...(user.settings.notifications.quietHours || {}), ...notifications.quietHours }
+      }
+      if (notifications.grouping) {
+        user.settings.notifications.grouping = { ...(user.settings.notifications.grouping || {}), ...notifications.grouping }
+      }
     }
 
     // Update security settings
@@ -294,4 +340,5 @@ export const disconnectApp = async (req: AuthRequest, res: Response) => {
     res.status(500).json({ message: error.message })
   }
 }
+
 

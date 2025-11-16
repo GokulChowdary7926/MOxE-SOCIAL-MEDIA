@@ -46,3 +46,49 @@ api.interceptors.response.use(
 export default api
 
 
+// Subscription API helpers
+export const subscriptionAPI = {
+  getPlans: () => api.get('/subscription/plans'),
+  getStatus: () => api.get('/subscription/status'),
+  subscribe: (plan: 'star' | 'thick') => api.post('/subscription/subscribe', { plan }),
+  cancel: () => api.post('/subscription/cancel'),
+}
+
+// Chat API helpers
+export const chatAPI = {
+  conversations: () => api.get('/chat/conversations'),
+  messagesWith: (userId: string) => api.get(`/chat/messages/${userId}`),
+  sendMessage: (payload: { recipientId: string; text: string; translation?: string }) =>
+    api.post('/chat/send', payload),
+  editMessage: (messageId: string, text: string) =>
+    api.put(`/chat/message/${messageId}/edit`, { text }),
+  recallMessage: (messageId: string) =>
+    api.delete(`/chat/message/${messageId}/recall`),
+  addReaction: (messageId: string, emoji: string) =>
+    api.post(`/chat/message/${messageId}/reaction`, { emoji }),
+  markRead: (messageId: string) =>
+    api.post(`/chat/message/${messageId}/read`),
+  // Groups
+  createGroup: (name: string, participants: string[]) =>
+    api.post('/chat/groups', { name, participants }),
+  getGroups: () => api.get('/chat/groups'),
+}
+
+// Collections API helpers
+export const collectionsAPI = {
+  list: () => api.get('/collections'),
+  create: (name: string, isPrivate: boolean = true) =>
+    api.post('/collections', { name, isPrivate }),
+  addPost: (collectionId: string, postId: string) =>
+    api.post(`/collections/${collectionId}/add/${postId}`),
+  removePost: (collectionId: string, postId: string) =>
+    api.delete(`/collections/${collectionId}/remove/${postId}`),
+}
+
+// Username API helpers
+export const usernameAPI = {
+  check: (username: string) => api.get(`/username/check`, { params: { username } }),
+  suggest: (base: string) => api.get(`/username/suggest`, { params: { base } }),
+}
+
+

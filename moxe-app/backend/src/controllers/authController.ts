@@ -149,13 +149,13 @@ export const register = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Invalid account type. Must be personal, business, or creator' })
     }
 
-    // Check account limits per phone number (max 3 accounts)
+    // Check account limits per phone number (max 2 accounts)
     const existingAccounts = await User.find({ phone })
     const accountCount = existingAccounts.length
 
-    if (accountCount >= 3) {
+    if (accountCount >= 2) {
       return res.status(400).json({ 
-        message: 'Maximum account limit reached. You can only create 3 accounts per phone number.',
+        message: 'Maximum account limit reached. You can only create 2 accounts per phone number.',
         existingAccounts: existingAccounts.map(acc => ({
           accountType: acc.accountType,
           username: acc.profile?.username,
@@ -163,13 +163,13 @@ export const register = async (req: Request, res: Response) => {
       })
     }
 
-    // Check if this specific account type already exists for this phone
+    // Optional: prevent duplicate account type for the same phone
     const existingAccountType = existingAccounts.find(acc => acc.accountType === accountType)
     if (existingAccountType) {
       return res.status(400).json({ 
         message: `You already have a ${accountType} account with this phone number.`,
-        suggestion: accountCount < 3 
-          ? `You can create ${3 - accountCount} more account(s) with different types.`
+        suggestion: accountCount < 2 
+          ? `You can create ${2 - accountCount} more account(s) with a different type.`
           : 'You have reached the maximum account limit.'
       })
     }
@@ -180,8 +180,8 @@ export const register = async (req: Request, res: Response) => {
       // Business accounts are always public
     }
 
-    // Calculate accounts remaining
-    const accountsRemaining = 3 - accountCount - 1
+    // Calculate accounts remaining (out of 2)
+    const accountsRemaining = 2 - accountCount - 1
 
     // Generate unique username
     const baseUsername = name?.toLowerCase().replace(/\s+/g, '_') || 'user'
@@ -194,12 +194,13 @@ export const register = async (req: Request, res: Response) => {
       counter++
     }
 
-    // Create user
+    // Create user (ensure username field also stored at root and in profile)
     const user = new User({
       phone,
       email: accountType !== 'personal' ? email : undefined, // Email optional for business/creator
       accountType,
       accountsRemaining,
+      username,
       profile: {
         fullName: name,
         username,
@@ -313,5 +314,6 @@ export const logout = async (req: AuthRequest, res: Response) => {
     res.status(500).json({ message: error.message })
   }
 }
+
 
 

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../../services/api'
 
@@ -33,6 +33,7 @@ function ToggleSwitch({ checked, onChange, label, description }: ToggleSwitchPro
 
 export default function NotificationSettings() {
   const navigate = useNavigate()
+  const quietRef = useRef<HTMLDivElement>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const [settings, setSettings] = useState({
@@ -56,6 +57,14 @@ export default function NotificationSettings() {
       enabled: true,
       sound: true,
       vibration: true,
+    },
+    quietHours: {
+      enabled: false,
+      start: '22:00',
+      end: '07:00',
+    },
+    grouping: {
+      byType: true,
     },
   })
 
@@ -90,6 +99,14 @@ export default function NotificationSettings() {
             sound: notif.inApp?.sound !== false,
             vibration: notif.inApp?.vibration !== false,
           },
+          quietHours: {
+            enabled: notif.quietHours?.enabled || false,
+            start: notif.quietHours?.start || '22:00',
+            end: notif.quietHours?.end || '07:00',
+          },
+          grouping: {
+            byType: notif.grouping?.byType !== false,
+          },
         })
       }
     } catch (error) {
@@ -116,7 +133,7 @@ export default function NotificationSettings() {
   return (
     <div className="p-4 space-y-4 pb-20">
       {/* Header */}
-      <div className="flex items-center gap-3 mb-4">
+      <div className="flex items-center gap-3 mb-2">
         <button
           onClick={() => navigate('/settings')}
           className="w-10 h-10 rounded-full bg-medium-gray hover:bg-light-gray flex items-center justify-center text-white transition-colors"
@@ -128,6 +145,19 @@ export default function NotificationSettings() {
           <p className="text-sm text-text-gray">Control how you receive notifications</p>
         </div>
       </div>
+      {settings.quietHours.enabled && (
+        <div className="bg-medium-gray rounded-xl p-3 text-xs text-text-gray flex items-center justify-between">
+          <div>
+            Quiet hours active daily from <span className="text-white">{settings.quietHours.start}</span> to <span className="text-white">{settings.quietHours.end}</span>.
+          </div>
+          <button
+            onClick={() => quietRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+            className="text-white bg-dark-gray px-3 py-1 rounded-lg hover:bg-light-gray transition-colors"
+          >
+            Manage
+          </button>
+        </div>
+      )}
 
       {/* Save Status */}
       {saveStatus === 'saved' && (
@@ -242,6 +272,50 @@ export default function NotificationSettings() {
         )}
       </div>
 
+      {/* Quiet Hours */}
+      <div ref={quietRef} className="bg-medium-gray rounded-2xl p-4 space-y-4">
+        <h2 className="text-lg font-semibold text-white">Quiet Hours</h2>
+        <ToggleSwitch
+          checked={settings.quietHours.enabled}
+          onChange={(val) => setSettings({ ...settings, quietHours: { ...settings.quietHours, enabled: val } })}
+          label="Enable Quiet Hours"
+          description="Mute push notifications during set hours"
+        />
+        {settings.quietHours.enabled && (
+          <div className="grid grid-cols-2 gap-3 pl-4">
+            <div>
+              <label className="block text-xs text-text-gray mb-1">Start</label>
+              <input
+                type="time"
+                value={settings.quietHours.start}
+                onChange={(e) => setSettings({ ...settings, quietHours: { ...settings.quietHours, start: e.target.value } })}
+                className="w-full bg-dark-gray border-none rounded-lg px-3 py-2 text-white text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-text-gray mb-1">End</label>
+              <input
+                type="time"
+                value={settings.quietHours.end}
+                onChange={(e) => setSettings({ ...settings, quietHours: { ...settings.quietHours, end: e.target.value } })}
+                className="w-full bg-dark-gray border-none rounded-lg px-3 py-2 text-white text-sm"
+              />
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Grouping */}
+      <div className="bg-medium-gray rounded-2xl p-4 space-y-2">
+        <h2 className="text-lg font-semibold text-white">Notification Grouping</h2>
+        <ToggleSwitch
+          checked={settings.grouping.byType}
+          onChange={(val) => setSettings({ ...settings, grouping: { byType: val } })}
+          label="Group notifications by type"
+          description="Combine similar notifications into a single summary"
+        />
+      </div>
+
       {/* Save Button */}
       <button
         onClick={handleSave}
@@ -253,4 +327,5 @@ export default function NotificationSettings() {
     </div>
   )
 }
+
 
