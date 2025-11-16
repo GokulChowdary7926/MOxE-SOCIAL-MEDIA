@@ -11,23 +11,44 @@ export const getForYouFeed = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ message: 'User not found' })
     }
 
-    // Algorithmic feed based on user interests, engagement, etc.
-    const following = user.following || []
-    const followingIds = following.map((id: any) => id.toString())
+    const page = Math.max(parseInt(String(req.query.page || '1'), 10), 1)
+    const limit = Math.min(Math.max(parseInt(String(req.query.limit || '20'), 10), 1), 50)
 
-    const posts = await Post.find({
-      $or: [
-        { author: { $in: followingIds } },
-        { visibility: { type: 'public' } },
-      ],
-      isArchived: false,
-      isHidden: false,
-    })
-      .populate('author', 'profile subscription')
-      .sort({ createdAt: -1 })
-      .limit(20)
+    // Signals: following authors get a boost; recent and engaged posts preferred
+    const following = (user.following || []).map((id: any) => new mongoose.Types.ObjectId(id))
 
-    res.json({ posts })
+    const posts = await Post.aggregate([
+      {
+        $match: {
+          isArchived: false,
+          isHidden: false,
+        },
+      },
+      {
+        $addFields: {
+          score: {
+            $add: [
+              // recency score: newer posts higher
+              { $multiply: [{ $divide: [{ $subtract: [new Date(), '$createdAt'] }, 1000 * 60 * 60 * 24] }, -1] },
+              // engagement score
+              { $multiply: [{ $size: { $ifNull: ['$engagement.likes', []] } }, 0.5] },
+              { $multiply: [{ $size: { $ifNull: ['$engagement.comments', []] } }, 0.7] },
+              // following boost
+              {
+                $cond: [{ $in: ['$author', following] }, 10, 0],
+              },
+            ],
+          },
+        },
+      },
+      { $sort: { score: -1, createdAt: -1 } },
+      { $skip: (page - 1) * limit },
+      { $limit: limit },
+    ])
+
+    const populated = await Post.populate(posts, { path: 'author', select: 'profile subscription' })
+
+    res.json({ posts: populated, page, limit })
   } catch (error: any) {
     res.status(500).json({ message: error.message })
   }
@@ -35,14 +56,16 @@ export const getForYouFeed = async (req: AuthRequest, res: Response) => {
 
 export const getTrending = async (req: AuthRequest, res: Response) => {
   try {
-    // Get trending hashtags and topics
-    const trending = [
-      { hashtag: 'moxe', count: 1250 },
-      { hashtag: 'social', count: 980 },
-      { hashtag: 'tech', count: 750 },
-    ]
-
-    res.json({ trending })
+    // Trending hashtags in last 24h by count
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000)
+    const trending = await Post.aggregate([
+      { $match: { createdAt: { $gte: since }, isArchived: false, isHidden: false } },
+      { $unwind: '$hashtags' },
+      { $group: { _id: { $toLower: '$hashtags' }, count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+      { $limit: 20 },
+    ])
+    res.json({ trending: trending.map((t) => ({ hashtag: t._id, count: t.count })) })
   } catch (error: any) {
     res.status(500).json({ message: error.message })
   }
@@ -58,18 +81,27 @@ export const getPeopleRecommendations = async (req: AuthRequest, res: Response) 
     const following = user.following || []
     const followingIds = following.map((id: any) => id.toString())
 
-    // Recommend users not already followed
-    const users = await User.find({
-      _id: { $nin: [req.user._id, ...followingIds] },
-      isActive: true,
-    })
-      .select('profile followers')
-      .limit(20)
+    // Recommend users not already followed, ranked by follower count
+    const users = await User.aggregate([
+      {
+        $match: {
+          _id: { $nin: [new mongoose.Types.ObjectId(req.user._id), ...following.map((f: any) => new mongoose.Types.ObjectId(f))] },
+        },
+      },
+      {
+        $addFields: {
+          followersCount: { $size: { $ifNull: ['$followers', []] } },
+        },
+      },
+      { $sort: { followersCount: -1 } },
+      { $limit: 20 },
+      { $project: { profile: 1, followersCount: 1 } },
+    ])
 
     const recommendations = users.map((u: any) => ({
       _id: u._id,
       profile: u.profile,
-      followersCount: u.followers?.length || 0,
+      followersCount: u.followersCount || 0,
     }))
 
     res.json({ users: recommendations })
@@ -80,13 +112,15 @@ export const getPeopleRecommendations = async (req: AuthRequest, res: Response) 
 
 export const getTrendingHashtags = async (req: AuthRequest, res: Response) => {
   try {
-    // Get trending hashtags from posts
-    const hashtags = [
-      { _id: '1', name: 'moxe', postCount: 1250 },
-      { _id: '2', name: 'social', postCount: 980 },
-      { _id: '3', name: 'tech', postCount: 750 },
-    ]
-
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000)
+    const tags = await Post.aggregate([
+      { $match: { createdAt: { $gte: since }, isArchived: false, isHidden: false } },
+      { $unwind: '$hashtags' },
+      { $group: { _id: { $toLower: '$hashtags' }, count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+      { $limit: 20 },
+    ])
+    const hashtags = tags.map((t) => ({ name: t._id, postCount: t.count }))
     res.json({ hashtags })
   } catch (error: any) {
     res.status(500).json({ message: error.message })
@@ -95,12 +129,14 @@ export const getTrendingHashtags = async (req: AuthRequest, res: Response) => {
 
 export const search = async (req: AuthRequest, res: Response) => {
   try {
-    const { q } = req.query
+    const { q, page = '1', limit = '20' } = req.query as any
     if (!q || typeof q !== 'string') {
       return res.status(400).json({ message: 'Search query required' })
     }
 
     const query = q.trim()
+    const pageNum = Math.max(parseInt(String(page), 10), 1)
+    const perPage = Math.min(Math.max(parseInt(String(limit), 10), 1), 50)
 
     // Search users
     const users = await User.find({
@@ -108,7 +144,6 @@ export const search = async (req: AuthRequest, res: Response) => {
         { 'profile.username': { $regex: query, $options: 'i' } },
         { 'profile.fullName': { $regex: query, $options: 'i' } },
       ],
-      isActive: true,
     })
       .select('profile followers')
       .limit(10)
@@ -117,18 +152,20 @@ export const search = async (req: AuthRequest, res: Response) => {
     const posts = await Post.find({
       $or: [
         { 'content.text': { $regex: query, $options: 'i' } },
-        { 'content.hashtags': { $in: [new RegExp(query, 'i')] } },
+        { hashtags: { $in: [new RegExp(query, 'i')] } },
         { 'location.name': { $regex: query, $options: 'i' } },
       ],
       isArchived: false,
       isHidden: false,
     })
       .populate('author', 'profile subscription')
-      .limit(20)
+      .sort({ createdAt: -1 })
+      .skip((pageNum - 1) * perPage)
+      .limit(perPage)
 
     // Search hashtags (distinct)
-    const hashtags = await Post.distinct('content.hashtags', {
-      'content.hashtags': { $in: [new RegExp(query, 'i')] },
+    const hashtags = await Post.distinct('hashtags', {
+      hashtags: { $in: [new RegExp(query, 'i')] },
     })
 
     // Search locations (distinct location names if present)
@@ -152,9 +189,12 @@ export const search = async (req: AuthRequest, res: Response) => {
         postCount: 0, // Could be calculated if needed
       })),
       locations: locations.map((l: any) => ({ name: l._id, count: l.count })),
+      page: pageNum,
+      limit: perPage,
     })
   } catch (error: any) {
     res.status(500).json({ message: error.message })
   }
 }
+
 
