@@ -187,6 +187,7 @@ export interface IUser extends Document {
   hiddenPosts?: mongoose.Types.ObjectId[]
   password?: string
   deactivatedAt?: Date
+  deviceTokens?: string[]
   createdAt: Date
   lastActive: Date
 }
@@ -372,6 +373,7 @@ const UserSchema = new Schema<IUser>({
   hiddenPosts: [{ type: Schema.Types.ObjectId, ref: 'Post' }],
   password: { type: String },
   deactivatedAt: { type: Date },
+  deviceTokens: [{ type: String }],
   createdAt: { type: Date, default: Date.now },
   lastActive: { type: Date, default: Date.now },
 })

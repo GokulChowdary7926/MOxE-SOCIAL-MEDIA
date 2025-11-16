@@ -40,17 +40,24 @@ export const getConversations = async (req: AuthRequest, res: Response) => {
 export const getMessages = async (req: AuthRequest, res: Response) => {
   try {
     const { userId } = req.params
-
-    const messages = await Message.find({
+    const { before, limit = '50' } = req.query as any
+    const perPage = Math.min(Math.max(parseInt(String(limit), 10), 1), 100)
+    const match: any = {
       $or: [
         { sender: req.user._id, conversation: userId },
         { sender: userId, conversation: req.user._id },
       ],
-    })
+    }
+    if (before) {
+      match.createdAt = { $lt: new Date(String(before)) }
+    }
+    const messages = await Message.find(match)
       .populate('sender', 'profile')
-      .sort({ createdAt: 1 })
+      .sort({ createdAt: -1 })
+      .limit(perPage)
 
-    res.json({ messages })
+    // return in chronological order to the client
+    res.json({ messages: messages.reverse(), nextBefore: messages[0]?.createdAt || null })
   } catch (error: any) {
     res.status(500).json({ message: error.message })
   }
@@ -346,3 +353,4 @@ export const markMessageAsRead = async (req: AuthRequest, res: Response) => {
     res.status(500).json({ message: error.message })
   }
 }
+

@@ -15,6 +15,9 @@ import {
   addCloseFriend,
   removeCloseFriend,
 } from '../controllers/userController'
+import { rateLimiter } from '../middleware/rateLimiter'
+import { validateBody } from '../middleware/validate'
+import { changeUsername, saveDeviceToken, removeDeviceToken } from '../controllers/userController'
 import { updateSubscription as updateSub, getSubscriptionStatus } from '../controllers/subscriptionController'
 import { messageBlockedUser, viewProfileAnonymously, viewStoryAnonymously } from '../controllers/premiumController'
 import {
@@ -50,6 +53,19 @@ router.get('/subscription/status', authenticate, getSubscriptionStatus)
 router.post('/trusted-contacts', authenticate, addTrustedContact)
 router.delete('/trusted-contacts/:contactId', authenticate, removeTrustedContact)
 router.get('/trusted-contacts', authenticate, getTrustedContacts)
+
+// Username change with cooldown
+router.patch(
+  '/username',
+  authenticate,
+  rateLimiter(5, 60_000),
+  validateBody({ username: { required: true, regex: /^(?=.{3,30}$)(?!.*\.\.)(?!.*\.$)[A-Za-z0-9._]+$/ } }),
+  changeUsername
+)
+
+// Device tokens for push notifications
+router.post('/device-token', authenticate, rateLimiter(30, 60_000), validateBody({ token: { required: true } }), saveDeviceToken)
+router.delete('/device-token', authenticate, rateLimiter(30, 60_000), validateBody({ token: { required: true } }), removeDeviceToken)
 
 // Settings endpoints
 router.get('/settings', authenticate, getUserSettings)

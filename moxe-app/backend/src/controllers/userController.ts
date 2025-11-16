@@ -1,6 +1,7 @@
 import { Response } from 'express'
 import { AuthRequest } from '../middleware/auth'
 import User from '../models/User'
+import { Request, Response } from 'express'
 
 export const getProfile = async (req: AuthRequest, res: Response) => {
   try {
@@ -218,6 +219,65 @@ export const getTrustedContacts = async (req: AuthRequest, res: Response) => {
     res.json({ trustedContacts: user.trustedContacts })
   } catch (error: any) {
     res.status(500).json({ message: error.message })
+  }
+}
+
+export const changeUsername = async (req: AuthRequest, res: Response) => {
+  try {
+    const { username } = req.body
+    if (!username) return res.status(400).json({ message: 'username required' })
+    const uname = String(username).toLowerCase()
+    const regex = /^(?=.{3,30}$)(?!.*\.\.)(?!.*\.$)[A-Za-z0-9._]+$/
+    if (!regex.test(uname)) return res.status(400).json({ message: 'Invalid username format' })
+    const user = await User.findById(req.user._id)
+    if (!user) return res.status(404).json({ message: 'User not found' })
+    const now = new Date()
+    if (user.usernameChangeAllowedAt && now < user.usernameChangeAllowedAt) {
+      const ms = user.usernameChangeAllowedAt.getTime() - now.getTime()
+      const hours = Math.ceil(ms / (1000 * 60 * 60))
+      return res.status(400).json({ message: `You can change username again in ~${hours}h` })
+    }
+    const exists = await User.findOne({ $or: [{ username: uname }, { 'profile.username': uname }] })
+    if (exists && String(exists._id) !== String(user._id)) {
+      return res.status(400).json({ message: 'Username already taken' })
+    }
+    user.username = uname
+    user.profile = user.profile || ({} as any)
+    user.profile.username = uname
+    // cooldown 24h
+    user.usernameChangeAllowedAt = new Date(Date.now() + 24 * 60 * 60 * 1000)
+    await user.save()
+    res.json({ username: user.username, usernameChangeAllowedAt: user.usernameChangeAllowedAt })
+  } catch (e: any) {
+    res.status(500).json({ message: e.message })
+  }
+}
+
+export const saveDeviceToken = async (req: AuthRequest, res: Response) => {
+  try {
+    const { token } = req.body
+    if (!token) return res.status(400).json({ message: 'token required' })
+    const user = await User.findById(req.user._id)
+    if (!user) return res.status(404).json({ message: 'User not found' })
+    user.deviceTokens = Array.from(new Set([...(user.deviceTokens || []), token]))
+    await user.save()
+    res.json({ deviceTokens: user.deviceTokens })
+  } catch (e: any) {
+    res.status(500).json({ message: e.message })
+  }
+}
+
+export const removeDeviceToken = async (req: AuthRequest, res: Response) => {
+  try {
+    const { token } = req.body
+    if (!token) return res.status(400).json({ message: 'token required' })
+    const user = await User.findById(req.user._id)
+    if (!user) return res.status(404).json({ message: 'User not found' })
+    user.deviceTokens = (user.deviceTokens || []).filter((t: string) => t !== token)
+    await user.save()
+    res.json({ deviceTokens: user.deviceTokens })
+  } catch (e: any) {
+    res.status(500).json({ message: e.message })
   }
 }
 
