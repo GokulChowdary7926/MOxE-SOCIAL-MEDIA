@@ -93,7 +93,7 @@ export default function ReelMenu({ reelId, authorId, onReelDeleted, onReelArchiv
     try {
       await api.post(`/posts/${reelId}/report`, { reason })
       setIsOpen(false)
-      alert('Reel reported successfully. Thank you for keeping MOXE safe.')
+      alert('Reel reported successfully. Thank you for keeping MOxE safe.')
     } catch (error) {
       console.error('Failed to report reel:', error)
       alert('Failed to report reel. Please try again.')

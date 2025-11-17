@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom'
 export default function QRScanner() {
   const videoRef = useRef<HTMLVideoElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
-  const [message, setMessage] = useState<string>('Point the camera at a MOXE profile QR')
+  const [message, setMessage] = useState<string>('Point the camera at a MOxE profile QR')
   const navigate = useNavigate()
 
   useEffect(() => {

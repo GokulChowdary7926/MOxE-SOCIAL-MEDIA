@@ -3,6 +3,7 @@ import { AuthRequest } from '../middleware/auth'
 import User from '../models/User'
 import jwt from 'jsonwebtoken'
 import twilio from 'twilio'
+import bcrypt from 'bcryptjs'
 
 // Store OTPs temporarily (in production, use Redis)
 const otpStore: Map<string, { otp: string; expiresAt: number }> = new Map()
@@ -58,7 +59,7 @@ export const requestOTP = async (req: Request, res: Response) => {
       try {
         // Send OTP via Twilio SMS
         await twilioClient.messages.create({
-          body: `Your MOXE verification code is: ${otp}. This code will expire in 10 minutes.`,
+          body: `Your MOxE verification code is: ${otp}. This code will expire in 10 minutes.`,
           from: process.env.TWILIO_PHONE_NUMBER,
           to: formattedPhone,
         })
@@ -271,6 +272,163 @@ export const login = async (req: Request, res: Response) => {
     })
   } catch (error: any) {
     res.status(500).json({ message: error.message })
+  }
+}
+
+export const createPassword = async (req: Request, res: Response) => {
+  try {
+    const { phone, password, username, name, email, accountType } = req.body
+
+    if (!phone || !password || !username || !name || !accountType) {
+      return res.status(400).json({ message: 'All fields are required' })
+    }
+
+    if (password.length < 8) {
+      return res.status(400).json({ message: 'Password must be at least 8 characters long' })
+    }
+
+    // Validate username format
+    if (!/^(?=.{3,30}$)(?!.*\.\.)(?!.*\.$)[A-Za-z0-9._]+$/.test(username)) {
+      return res.status(400).json({ message: 'Invalid username format' })
+    }
+
+    // Check if username already exists
+    const existingUser = await User.findOne({ 
+      $or: [
+        { username: username.toLowerCase() },
+        { 'profile.username': username.toLowerCase() }
+      ]
+    })
+    if (existingUser) {
+      return res.status(400).json({ message: 'Username already taken' })
+    }
+
+    // Check account limits per phone number (max 2 accounts)
+    const existingAccounts = await User.find({ phone })
+    const accountCount = existingAccounts.length
+
+    if (accountCount >= 2) {
+      return res.status(400).json({ 
+        message: 'Maximum account limit reached. You can only create 2 accounts per phone number.'
+      })
+    }
+
+    // Check if account type already exists for this phone
+    const existingAccountType = existingAccounts.find(acc => acc.accountType === accountType)
+    if (existingAccountType) {
+      return res.status(400).json({ 
+        message: `You already have a ${accountType} account with this phone number.`
+      })
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10)
+
+    // Calculate accounts remaining
+    const accountsRemaining = 2 - accountCount - 1
+
+    // Create user
+    const user = new User({
+      phone,
+      email: email || undefined,
+      accountType,
+      accountsRemaining,
+      username: username.toLowerCase(),
+      password: hashedPassword,
+      profile: {
+        fullName: name,
+        username: username.toLowerCase(),
+        isPrivate: accountType === 'business' ? false : true,
+      },
+      subscription: {
+        tier: 'basic',
+        periodStart: new Date(),
+        periodEnd: new Date(Date.now() + 28 * 24 * 60 * 60 * 1000),
+      },
+    })
+
+    await user.save()
+
+    // Generate token
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET || 'your-secret-key', {
+      expiresIn: '7d',
+    })
+
+    res.json({
+      message: 'Account created successfully',
+      token,
+      user: {
+        _id: user._id,
+        phone: user.phone,
+        accountType: user.accountType,
+        profile: user.profile,
+        subscription: user.subscription,
+      },
+    })
+  } catch (error: any) {
+    console.error('Create password error:', error)
+    if (error.code === 11000) {
+      // Duplicate key error (username already exists)
+      return res.status(400).json({ message: 'Username already taken' })
+    }
+    res.status(500).json({ message: error.message || 'Failed to create account' })
+  }
+}
+
+export const loginWithPassword = async (req: Request, res: Response) => {
+  try {
+    const { username, password } = req.body
+
+    if (!username || !password) {
+      return res.status(400).json({ message: 'Username and password are required' })
+    }
+
+    // Find user by username (check both root username and profile.username)
+    const user = await User.findOne({
+      $or: [
+        { username: username.toLowerCase() },
+        { 'profile.username': username.toLowerCase() }
+      ]
+    })
+
+    if (!user) {
+      return res.status(401).json({ message: 'Invalid username or password' })
+    }
+
+    // Check if user has a password set
+    if (!user.password) {
+      return res.status(401).json({ message: 'Password not set. Please use OTP login or set a password.' })
+    }
+
+    // Verify password
+    const isPasswordValid = await bcrypt.compare(password, user.password)
+    if (!isPasswordValid) {
+      return res.status(401).json({ message: 'Invalid username or password' })
+    }
+
+    // Generate token
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET || 'your-secret-key', {
+      expiresIn: '7d',
+    })
+
+    // Update last active
+    user.lastActive = new Date()
+    await user.save()
+
+    res.json({
+      message: 'Login successful',
+      token,
+      user: {
+        _id: user._id,
+        phone: user.phone,
+        accountType: user.accountType,
+        profile: user.profile,
+        subscription: user.subscription,
+      },
+    })
+  } catch (error: any) {
+    console.error('Login with password error:', error)
+    res.status(500).json({ message: error.message || 'Login failed' })
   }
 }
 

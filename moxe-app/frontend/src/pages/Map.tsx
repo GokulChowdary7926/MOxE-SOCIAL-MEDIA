@@ -295,7 +295,7 @@ export default function Map() {
       >
         <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
           <i className="fas fa-map-marked-alt text-primary-light"></i>
-          MOXE Map
+          MOxE Map
         </h3>
         <div className="h-64 rounded-lg overflow-hidden relative">
           <MapContainer

@@ -19,13 +19,14 @@ import NearbyMessaging from './pages/NearbyMessaging'
 import NearbyPlaces from './pages/NearbyPlaces'
 import TranslationSettings from './pages/TranslationSettings'
 import SOSEmergency from './pages/SOSEmergency'
-import MOXEStore from './pages/MOXEStore'
+import MOxEStore from './pages/MOXEStore'
 import ContentSettings from './pages/ContentSettings'
 import FullScreenMap from './pages/FullScreenMap'
 import SnapMap from './pages/SnapMap'
 import Login from './pages/auth/Login'
 import Register from './pages/auth/Register'
 import OTPVerification from './pages/auth/OTPVerification'
+import CreatePassword from './pages/auth/CreatePassword'
 import AccountSettings from './pages/settings/AccountSettings'
 import PrivacySettings from './pages/settings/PrivacySettings'
 import NotificationSettings from './pages/settings/NotificationSettings'
@@ -55,6 +56,7 @@ function App() {
       <Route path="/login" element={!isAuthenticated ? <Login /> : <Navigate to="/" />} />
       <Route path="/register" element={!isAuthenticated ? <Register /> : <Navigate to="/" />} />
       <Route path="/verify-otp" element={!isAuthenticated ? <OTPVerification /> : <Navigate to="/" />} />
+      <Route path="/create-password" element={!isAuthenticated ? <CreatePassword /> : <Navigate to="/" />} />
       
       {/* Full-screen map (outside Layout for full-screen experience) */}
       <Route path="/map/fullscreen" element={isAuthenticated ? <FullScreenMap /> : <Navigate to="/login" />} />
@@ -75,7 +77,7 @@ function App() {
         <Route path="/nearby-places" element={isAuthenticated ? <NearbyPlaces /> : <Navigate to="/login" />} />
         <Route path="/translation-settings" element={isAuthenticated ? <TranslationSettings /> : <Navigate to="/login" />} />
         <Route path="/sos-emergency" element={isAuthenticated ? <SOSEmergency /> : <Navigate to="/login" />} />
-        <Route path="/store" element={isAuthenticated ? <MOXEStore /> : <Navigate to="/login" />} />
+        <Route path="/store" element={isAuthenticated ? <MOxEStore /> : <Navigate to="/login" />} />
         <Route path="/settings/content" element={isAuthenticated ? <ContentSettings /> : <Navigate to="/login" />} />
         <Route path="/settings/account" element={isAuthenticated ? <AccountSettings /> : <Navigate to="/login" />} />
         <Route path="/settings/privacy" element={isAuthenticated ? <PrivacySettings /> : <Navigate to="/login" />} />

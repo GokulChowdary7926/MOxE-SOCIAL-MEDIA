@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
 import { AppDispatch, RootState } from '../../store'
 import { verifyOTP, register, login, requestOTP } from '../../store/slices/authSlice'
+import Logo from '../../components/common/Logo'
 
 export default function OTPVerification() {
   const [otp, setOtp] = useState('')
@@ -53,18 +54,11 @@ export default function OTPVerification() {
 
     try {
       if (isRegistering) {
-        // Registration flow
-        const regData = JSON.parse(localStorage.getItem('registrationData') || '{}')
-        await dispatch(register({
-          phone: phoneNumber,
-          otp,
-          name: regData.name,
-          accountType: regData.accountType,
-        })).unwrap()
-        localStorage.removeItem('registrationData')
+        // Registration flow - just verify OTP, then go to password creation
+        await dispatch(verifyOTP({ phone: phoneNumber, otp })).unwrap()
         
-        // Redirect after successful registration
-        navigate('/', { replace: true })
+        // Redirect to password creation page
+        navigate('/create-password')
       } else {
         // Login flow - first verify OTP, then login
         await dispatch(verifyOTP({ phone: phoneNumber, otp })).unwrap()
@@ -85,9 +79,8 @@ export default function OTPVerification() {
     <div className="min-h-screen bg-dark flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2 mb-4">
-            <i className="fas fa-shield-alt text-primary text-4xl bg-primary/20 p-3 rounded-full"></i>
-            <span className="text-3xl font-bold text-white">MOXE</span>
+          <div className="flex justify-center mb-4">
+            <Logo size="lg" showText={true} />
           </div>
           <h2 className="text-2xl font-semibold text-white mb-2">Verify OTP</h2>
           <p className="text-text-gray">

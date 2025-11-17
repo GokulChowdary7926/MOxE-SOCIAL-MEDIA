@@ -230,7 +230,7 @@ export default function NotificationSettings() {
               checked={settings.email.weeklyDigest}
               onChange={(val) => setSettings({ ...settings, email: { ...settings.email, weeklyDigest: val } })}
               label="Weekly Digest"
-              description="Summary of your week on MOXE"
+              description="Summary of your week on MOxE"
             />
             <ToggleSwitch
               checked={settings.email.securityAlerts}

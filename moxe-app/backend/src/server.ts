@@ -60,7 +60,7 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }))
 
 // Health check
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', message: 'MOXE API is running' })
+  res.json({ status: 'ok', message: 'MOxE API is running' })
 })
 
 // Routes
@@ -110,7 +110,7 @@ connectDB()
 const PORT = process.env.PORT || 5001
 
 httpServer.listen(PORT, () => {
-  console.log(`🚀 MOXE Backend Server running on port ${PORT}`)
+  console.log(`🚀 MOxE Backend Server running on port ${PORT}`)
   console.log(`📡 Socket.io server ready`)
   console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`)
 })

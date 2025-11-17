@@ -552,7 +552,7 @@ export default function Settings() {
                 </li>
                 <li className="flex items-center gap-2">
                   <i className="fas fa-check text-success"></i>
-                  <span>MOXE Map premium features</span>
+                  <span>MOxE Map premium features</span>
                 </li>
                 <li className="flex items-center gap-2">
                   <i className="fas fa-check text-success"></i>

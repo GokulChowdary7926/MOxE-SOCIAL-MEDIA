@@ -97,7 +97,7 @@ export default function PostMenu({ postId, authorId, onPostDeleted, onPostArchiv
     try {
       await api.post(`/posts/${postId}/report`, { reason })
       setIsOpen(false)
-      alert('Post reported successfully. Thank you for keeping MOXE safe.')
+      alert('Post reported successfully. Thank you for keeping MOxE safe.')
     } catch (error) {
       console.error('Failed to report post:', error)
       alert('Failed to report post. Please try again.')

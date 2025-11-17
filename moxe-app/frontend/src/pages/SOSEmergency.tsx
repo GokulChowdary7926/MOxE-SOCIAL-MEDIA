@@ -238,7 +238,7 @@ export default function SOSEmergency() {
           <i className="fas fa-exclamation-triangle text-white text-xl"></i>
         </div>
         <div>
-          <h2 className="text-2xl font-bold">MOXE SOS Emergency</h2>
+          <h2 className="text-2xl font-bold">MOxE SOS Emergency</h2>
           <p className="text-sm text-text-gray">Emergency assistance at your fingertips</p>
         </div>
       </div>
@@ -282,11 +282,11 @@ export default function SOSEmergency() {
         )}
       </div>
 
-      {/* MOXE SOS Protection */}
+      {/* MOxE SOS Protection */}
       <div className="bg-medium-gray rounded-2xl p-4">
         <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
           <i className="fas fa-shield-alt text-primary-light"></i>
-          MOXE SOS Protection
+          MOxE SOS Protection
           {activeSOSCount > 0 && (
             <span className="ml-2 bg-danger text-white text-xs px-2 py-1 rounded-full">
               {activeSOSCount} Active

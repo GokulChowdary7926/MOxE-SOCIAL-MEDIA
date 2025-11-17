@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { useSelector } from 'react-redux'
 import { RootState } from '../../store'
+import Logo from './Logo'
 
 export default function Header() {
   const navigate = useNavigate()
@@ -42,8 +43,7 @@ export default function Header() {
     <header className="sticky top-0 z-50 bg-gradient-to-r from-primary to-secondary p-4 shadow-lg">
       <div className="flex justify-between items-center gap-3">
         <div className="flex items-center gap-2 flex-1">
-          <i className="fas fa-shield-alt text-white bg-white/20 p-2 rounded-full"></i>
-          <h1 className="text-white text-xl font-bold cursor-pointer" onClick={() => navigate('/')}>MOXE</h1>
+          <Logo size="sm" showText={true} />
         </div>
         
         <div className="flex items-center gap-4">
@@ -77,13 +77,6 @@ export default function Header() {
               title="Settings"
             >
               <i className="fas fa-cog"></i>
-            </button>
-            <button 
-              className="text-white text-lg hover:text-accent transition-colors" 
-              onClick={() => navigate('/profile')}
-              title="Profile"
-            >
-              <i className="fas fa-user-circle"></i>
             </button>
           </div>
       </div>

@@ -204,7 +204,7 @@ export default function SnapMap() {
     }
   }, [isConnected, socket, loadFriends])
 
-  // Create MOXE Map-style avatar icon
+  // Create MOxE Map-style avatar icon
   const createMoxeAvatar = (friend: FriendLocation, isSelected: boolean = false) => {
     const size = isSelected ? 60 : 50
     const borderColor = friend.hasStory 
@@ -333,7 +333,7 @@ export default function SnapMap() {
           >
             <i className="fas fa-arrow-left"></i>
           </button>
-          <h1 className="text-white font-bold text-lg">MOXE Map</h1>
+          <h1 className="text-white font-bold text-lg">MOxE Map</h1>
         </div>
         <div className="flex items-center gap-2">
           <button

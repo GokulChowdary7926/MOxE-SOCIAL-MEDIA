@@ -109,6 +109,43 @@ export const login = createAsyncThunk(
   }
 )
 
+export const createPassword = createAsyncThunk(
+  'auth/createPassword',
+  async (data: { 
+    phone: string
+    password: string
+    username: string
+    name: string
+    email: string
+    accountType: 'personal' | 'business' | 'creator'
+  }, { rejectWithValue }) => {
+    try {
+      const response = await api.post('/auth/create-password', data)
+      if (response.data.token) {
+        localStorage.setItem('token', response.data.token)
+      }
+      return response.data
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to create password')
+    }
+  }
+)
+
+export const loginWithPassword = createAsyncThunk(
+  'auth/loginWithPassword',
+  async ({ username, password }: { username: string; password: string }, { rejectWithValue }) => {
+    try {
+      const response = await api.post('/auth/login-password', { username, password })
+      if (response.data.token) {
+        localStorage.setItem('token', response.data.token)
+      }
+      return response.data
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Login failed')
+    }
+  }
+)
+
 export const verifyToken = createAsyncThunk(
   'auth/verifyToken',
   async (_, { rejectWithValue }) => {
@@ -213,6 +250,40 @@ const authSlice = createSlice({
         console.log('✅ Login successful, user authenticated:', action.payload.user)
       })
       .addCase(login.rejected, (state, action) => {
+        state.isLoading = false
+        state.error = action.payload as string
+        state.isAuthenticated = false
+      })
+      // Create Password
+      .addCase(createPassword.pending, (state) => {
+        state.isLoading = true
+        state.error = null
+      })
+      .addCase(createPassword.fulfilled, (state, action) => {
+        state.isLoading = false
+        state.token = action.payload.token
+        state.user = action.payload.user
+        state.isAuthenticated = true
+        state.error = null
+      })
+      .addCase(createPassword.rejected, (state, action) => {
+        state.isLoading = false
+        state.error = action.payload as string
+        state.isAuthenticated = false
+      })
+      // Login with Password
+      .addCase(loginWithPassword.pending, (state) => {
+        state.isLoading = true
+        state.error = null
+      })
+      .addCase(loginWithPassword.fulfilled, (state, action) => {
+        state.isLoading = false
+        state.token = action.payload.token
+        state.user = action.payload.user
+        state.isAuthenticated = true
+        state.error = null
+      })
+      .addCase(loginWithPassword.rejected, (state, action) => {
         state.isLoading = false
         state.error = action.payload as string
         state.isAuthenticated = false

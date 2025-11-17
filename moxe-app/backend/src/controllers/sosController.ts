@@ -63,7 +63,7 @@ export const activateSOS = async (req: AuthRequest, res: Response) => {
       if (contact.phone && twilioClient) {
         try {
           await twilioClient.messages.create({
-            body: `🚨 EMERGENCY ALERT from ${user.profile?.fullName || 'MOXE User'}\n\nLocation: ${userLocation.latitude}, ${userLocation.longitude}\nTime: ${new Date().toLocaleString()}\n\nTriggered by: ${triggeredBy || 'manual'}\n\nPlease check on them immediately!`,
+            body: `🚨 EMERGENCY ALERT from ${user.profile?.fullName || 'MOxE User'}\n\nLocation: ${userLocation.latitude}, ${userLocation.longitude}\nTime: ${new Date().toLocaleString()}\n\nTriggered by: ${triggeredBy || 'manual'}\n\nPlease check on them immediately!`,
             from: process.env.TWILIO_PHONE_NUMBER,
             to: contact.phone.startsWith('+') ? contact.phone : `+${contact.phone}`,
           })

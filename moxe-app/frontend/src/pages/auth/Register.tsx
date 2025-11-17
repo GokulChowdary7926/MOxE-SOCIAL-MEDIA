@@ -3,10 +3,12 @@ import { useDispatch } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
 import { AppDispatch } from '../../store'
 import { requestOTP, setPhoneNumber } from '../../store/slices/authSlice'
+import Logo from '../../components/common/Logo'
 
 export default function Register() {
   const [countryCode, setCountryCode] = useState('+91')
   const [phone, setPhone] = useState('')
+  const [username, setUsername] = useState('')
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [accountType, setAccountType] = useState<'personal' | 'business' | 'creator'>('personal')
@@ -39,8 +41,14 @@ export default function Register() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    if (!phone.trim() || !name.trim()) {
-      alert('Phone number and name are required')
+    if (!phone.trim() || !username.trim() || !name.trim() || !email.trim()) {
+      alert('Phone number, username, name, and email are required')
+      return
+    }
+
+    // Validate username (3-30 chars, alphanumeric, dots, underscores)
+    if (!/^(?=.{3,30}$)(?!.*\.\.)(?!.*\.$)[A-Za-z0-9._]+$/.test(username)) {
+      alert('Username must be 3-30 characters, alphanumeric with dots and underscores only. Cannot start or end with dot.')
       return
     }
 
@@ -51,8 +59,8 @@ export default function Register() {
       return
     }
 
-    // Validate email if provided
-    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    // Validate email
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       alert('Please enter a valid email address')
       return
     }
@@ -64,11 +72,13 @@ export default function Register() {
       
       // If OTP is returned (development mode), show it to user
       if (result.otp) {
+        localStorage.setItem('devOtp', result.otp)
         alert(`OTP Code: ${result.otp}\n\n(This is shown in development mode. In production, you'll receive it via SMS.)`)
       }
       
       // Store registration data temporarily
-      localStorage.setItem('registrationData', JSON.stringify({ name, email, accountType }))
+      localStorage.setItem('registrationData', JSON.stringify({ username, name, email, accountType, phone: fullPhone }))
+      localStorage.setItem('phoneNumber', fullPhone)
       navigate('/verify-otp')
     } catch (err: any) {
       console.error('Registration error:', err)
@@ -85,15 +95,34 @@ export default function Register() {
     <div className="min-h-screen bg-dark flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2 mb-4">
-            <i className="fas fa-shield-alt text-primary text-4xl bg-primary/20 p-3 rounded-full"></i>
-            <span className="text-3xl font-bold text-white">MOXE</span>
+          <div className="flex justify-center mb-4">
+            <Logo size="lg" showText={true} />
           </div>
           <h2 className="text-2xl font-semibold text-white mb-2">Create Account</h2>
           <p className="text-text-gray">Join the privacy-first social platform</p>
         </div>
 
         <form onSubmit={handleSubmit} className="bg-medium-gray rounded-2xl p-6 space-y-4 shadow-lg shadow-black/20">
+          <div>
+            <label htmlFor="username" className="block text-sm font-medium mb-2">
+              Username *
+            </label>
+            <input
+              type="text"
+              id="username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9._]/g, ''))}
+              placeholder="Enter username"
+              className="w-full bg-light-gray border-none rounded-lg px-4 py-3 text-white placeholder-text-gray focus:outline-none focus:ring-2 focus:ring-primary"
+              required
+              minLength={3}
+              maxLength={30}
+            />
+            <p className="text-xs text-text-gray mt-1">
+              3-30 characters, letters, numbers, dots, and underscores only
+            </p>
+          </div>
+
           <div>
             <label htmlFor="name" className="block text-sm font-medium mb-2">
               Full Name *
@@ -111,7 +140,7 @@ export default function Register() {
 
           <div>
             <label htmlFor="email" className="block text-sm font-medium mb-2">
-              Email (Optional)
+              Email *
             </label>
             <input
               type="email"
@@ -120,10 +149,8 @@ export default function Register() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Enter your email"
               className="w-full bg-light-gray border-none rounded-lg px-4 py-3 text-white placeholder-text-gray focus:outline-none focus:ring-2 focus:ring-primary"
+              required
             />
-            <p className="text-xs text-text-gray mt-1">
-              Sign-in is phone + OTP only. Email is optional for business/creator.
-            </p>
           </div>
 
           <div>
@@ -155,7 +182,7 @@ export default function Register() {
               />
             </div>
             <p className="text-xs text-text-gray mt-1">
-              You can create up to 2 accounts per phone number.
+              You can create up to 2 accounts per phone number. After verification, you'll create a password.
             </p>
           </div>
 

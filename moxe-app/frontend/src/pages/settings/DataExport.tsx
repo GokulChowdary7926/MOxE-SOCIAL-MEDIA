@@ -54,7 +54,7 @@ export default function DataExport() {
         </button>
         <div>
           <h1 className="text-xl font-bold text-white">Download Your Data</h1>
-          <p className="text-sm text-text-gray">Get a copy of your MOXE data</p>
+          <p className="text-sm text-text-gray">Get a copy of your MOxE data</p>
         </div>
       </div>
 

@@ -12,7 +12,7 @@ export const getTrendingTopics = async (req: AuthRequest, res: Response) => {
       { tag: '#CoffeeLovers', count: 980 },
       { tag: '#WorkFromCafe', count: 750 },
       { tag: '#LocalBusiness', count: 620 },
-      { tag: '#MOXECommunity', count: 450 },
+      { tag: '#MOxECommunity', count: 450 },
     ]
 
     res.json({ trendingTopics })

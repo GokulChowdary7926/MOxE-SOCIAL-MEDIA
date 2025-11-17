@@ -307,12 +307,12 @@ export default function Explore() {
         </div>
       </div>
 
-      {/* MOXE Store */}
+      {/* MOxE Store */}
       <div className="bg-medium-gray rounded-2xl p-4">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold flex items-center gap-2">
             <i className="fas fa-store text-primary-light"></i>
-            MOXE Store
+            MOxE Store
           </h3>
           <button
             onClick={() => navigate('/store')}

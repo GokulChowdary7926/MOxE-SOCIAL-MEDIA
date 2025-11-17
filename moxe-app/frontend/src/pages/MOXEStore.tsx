@@ -17,7 +17,7 @@ interface Product {
   brand?: string
 }
 
-export default function MOXEStore() {
+export default function MOxEStore() {
   const navigate = useNavigate()
   const [products, setProducts] = useState<Product[]>([])
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
@@ -220,7 +220,7 @@ export default function MOXEStore() {
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <i className="fas fa-store text-primary-light"></i>
-            MOXE Store
+            MOxE Store
           </h1>
           <p className="text-sm text-text-gray">Shop the best deals</p>
         </div>
