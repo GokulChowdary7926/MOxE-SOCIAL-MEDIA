@@ -229,7 +229,7 @@ export default function Post({ post }: PostProps) {
         </div>
         <PostMenu 
           postId={post._id}
-          authorId={post.author._id || (post.author as any)._id}
+          authorId={(post.author as any)?._id || (post.author as any)?.id || ''}
           onPostDeleted={() => {
             // Refresh feed or remove post from view
             window.location.reload()

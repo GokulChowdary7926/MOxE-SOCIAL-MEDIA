@@ -265,12 +265,33 @@ export default function Map() {
     return () => clearInterval(interval)
   }, [nearbyUsers, isProximityEnabled, proximitySettings.alertFrequency])
 
-  const createCustomIcon = (color: string, letter: string) => {
+  const createCustomIcon = (color: string, letter: string, isUser: boolean = false) => {
+    const size = isUser ? 48 : 40
+    const borderWidth = isUser ? 4 : 3
     return L.divIcon({
-      className: 'custom-marker',
-      html: `<div style="background: ${color}; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; border: 3px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">${letter}</div>`,
-      iconSize: [40, 40],
-      iconAnchor: [20, 20],
+      className: 'apple-marker',
+      html: `
+        <div style="
+          background: ${color}; 
+          width: ${size}px; 
+          height: ${size}px; 
+          border-radius: 50%; 
+          display: flex; 
+          align-items: center; 
+          justify-content: center; 
+          color: white; 
+          font-weight: bold; 
+          font-size: ${isUser ? '18px' : '16px'};
+          border: ${borderWidth}px solid white; 
+          box-shadow: 0 4px 12px rgba(0,0,0,0.3), 0 0 0 2px rgba(255,255,255,0.5);
+          position: relative;
+        ">
+          ${letter}
+          ${isUser ? '<div style="position: absolute; bottom: -2px; right: -2px; width: 14px; height: 14px; background: #34C759; border: 2px solid white; border-radius: 50%;"></div>' : ''}
+        </div>
+      `,
+      iconSize: [size, size],
+      iconAnchor: [size / 2, size / 2],
     })
   }
 
@@ -297,20 +318,25 @@ export default function Map() {
           <i className="fas fa-map-marked-alt text-primary-light"></i>
           MOxE Map
         </h3>
-        <div className="h-64 rounded-lg overflow-hidden relative">
+        <div className="h-64 rounded-lg overflow-hidden relative apple-map-container">
           <MapContainer
             center={userLocation}
             zoom={13}
             style={{ height: '100%', width: '100%' }}
-            className="rounded-lg"
+            className="rounded-lg apple-map"
+            zoomControl={false}
+            attributionControl={false}
           >
             <TileLayer
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+              className="apple-map-tiles"
             />
             <MapController center={userLocation} />
-            <Marker position={userLocation} icon={createCustomIcon('#6a11cb', 'Y')}>
-              <Popup>You are here</Popup>
+            <Marker position={userLocation} icon={createCustomIcon('#007AFF', 'Y', true)}>
+              <Popup className="apple-popup">
+                <div className="font-semibold">You are here</div>
+              </Popup>
             </Marker>
             
             {/* Nearby Users Markers */}
@@ -327,9 +353,9 @@ export default function Map() {
                 <Marker
                   key={index}
                   position={[user.location.latitude, user.location.longitude]}
-                  icon={createCustomIcon(markerColor, user.profile?.fullName?.charAt(0) || 'U')}
+                  icon={createCustomIcon(markerColor, user.profile?.fullName?.charAt(0) || 'U', false)}
                 >
-                  <Popup>
+                  <Popup className="apple-popup">
                     <div>
                       <strong>{user.profile?.fullName || 'User'}</strong>
                       {user.subscription?.tier === 'star' && (
@@ -338,7 +364,7 @@ export default function Map() {
                         </span>
                       )}
                       <br />
-                      {user.distance} away
+                      <span className="text-sm text-gray-600">{user.distance} away</span>
                     </div>
                   </Popup>
                 </Marker>

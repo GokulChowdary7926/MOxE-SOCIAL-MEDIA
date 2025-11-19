@@ -29,6 +29,13 @@ export interface IPost extends Document {
     saves: mongoose.Types.ObjectId[]
     views: number
   }
+  metrics?: {
+    engagementRate?: number
+    reach?: number
+    impressions?: number
+    lastEngagedAt?: Date
+  }
+  algorithmScore?: number
   location?: {
     coordinates: [number, number]
     name?: string
@@ -97,6 +104,13 @@ const PostSchema = new Schema<IPost>({
   isArchived: { type: Boolean, default: false },
   isPinned: { type: Boolean, default: false },
   isHiddenFromProfile: { type: Boolean, default: false },
+  metrics: {
+    engagementRate: { type: Number, default: 0 },
+    reach: { type: Number, default: 0 },
+    impressions: { type: Number, default: 0 },
+    lastEngagedAt: Date,
+  },
+  algorithmScore: { type: Number, default: 0.5, index: true },
   reports: [{
     reportedBy: { type: Schema.Types.ObjectId, ref: 'User' },
     reason: String,
@@ -108,6 +122,10 @@ const PostSchema = new Schema<IPost>({
 
 PostSchema.index({ author: 1, createdAt: -1 })
 PostSchema.index({ 'location.coordinates': '2dsphere' })
+PostSchema.index({ createdAt: -1, algorithmScore: -1 })
+PostSchema.index({ hashtags: 1, createdAt: -1 })
+PostSchema.index({ 'engagement.likes': 1 })
+PostSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 })
 
 export default mongoose.model<IPost>('Post', PostSchema)
 

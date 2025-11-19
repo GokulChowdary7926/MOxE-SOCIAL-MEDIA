@@ -16,7 +16,6 @@ interface Badge {
 }
 
 export default function Lifestyle() {
-  // const { user } = useSelector((state: RootState) => state.auth) // Reserved for future use
   const [streaks, setStreaks] = useState<Streak[]>([])
   const [badges, setBadges] = useState<Badge[]>([])
   const [selectedActivity, setSelectedActivity] = useState('')
@@ -174,8 +173,9 @@ export default function Lifestyle() {
         {activeTab === 'leaderboard' && (
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium mb-2">Select Activity</label>
+              <label htmlFor="activity-select" className="block text-sm font-medium mb-2">Select Activity</label>
               <select
+                id="activity-select"
                 value={selectedActivity}
                 onChange={(e) => {
                   setSelectedActivity(e.target.value)
@@ -184,6 +184,8 @@ export default function Lifestyle() {
                   }
                 }}
                 className="w-full bg-light-gray border-none rounded-lg px-4 py-2 text-white"
+                title="Select activity for leaderboard"
+                aria-label="Select activity for leaderboard"
               >
                 <option value="">Select an activity</option>
                 {activities.map((activity) => (

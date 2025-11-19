@@ -20,9 +20,10 @@ import NearbyPlaces from './pages/NearbyPlaces'
 import TranslationSettings from './pages/TranslationSettings'
 import SOSEmergency from './pages/SOSEmergency'
 import MOxEStore from './pages/MOXEStore'
+import SafetyCheckIn from './components/safety/SafetyCheckIn'
 import ContentSettings from './pages/ContentSettings'
 import FullScreenMap from './pages/FullScreenMap'
-import SnapMap from './pages/SnapMap'
+import MOxEMap from './pages/MOxEMap'
 import Login from './pages/auth/Login'
 import Register from './pages/auth/Register'
 import OTPVerification from './pages/auth/OTPVerification'
@@ -60,7 +61,7 @@ function App() {
       
       {/* Full-screen map (outside Layout for full-screen experience) */}
       <Route path="/map/fullscreen" element={isAuthenticated ? <FullScreenMap /> : <Navigate to="/login" />} />
-      <Route path="/map/snap" element={isAuthenticated ? <SnapMap /> : <Navigate to="/login" />} />
+      <Route path="/map/snap" element={isAuthenticated ? <MOxEMap /> : <Navigate to="/login" />} />
       
       <Route element={<Layout />}>
         <Route path="/" element={isAuthenticated ? <Home /> : <Navigate to="/login" />} />
@@ -77,6 +78,7 @@ function App() {
         <Route path="/nearby-places" element={isAuthenticated ? <NearbyPlaces /> : <Navigate to="/login" />} />
         <Route path="/translation-settings" element={isAuthenticated ? <TranslationSettings /> : <Navigate to="/login" />} />
         <Route path="/sos-emergency" element={isAuthenticated ? <SOSEmergency /> : <Navigate to="/login" />} />
+        <Route path="/safety-check-in" element={isAuthenticated ? <SafetyCheckIn /> : <Navigate to="/login" />} />
         <Route path="/store" element={isAuthenticated ? <MOxEStore /> : <Navigate to="/login" />} />
         <Route path="/settings/content" element={isAuthenticated ? <ContentSettings /> : <Navigate to="/login" />} />
         <Route path="/settings/account" element={isAuthenticated ? <AccountSettings /> : <Navigate to="/login" />} />

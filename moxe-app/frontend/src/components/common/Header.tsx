@@ -40,8 +40,8 @@ export default function Header() {
   }, [])
 
   return (
-    <header className="sticky top-0 z-50 bg-gradient-to-r from-primary to-secondary p-4 shadow-lg">
-      <div className="flex justify-between items-center gap-3">
+    <header className="sticky top-0 z-50 bg-[rgba(0,0,0,0.5)] backdrop-blur-[20px] -webkit-backdrop-blur-[20px] px-4 py-3 border-b border-[rgba(255,255,255,0.1)]">
+      <div className="max-w-md mx-auto flex justify-between items-center gap-3">
         <div className="flex items-center gap-2 flex-1">
           <Logo size="sm" showText={true} />
         </div>

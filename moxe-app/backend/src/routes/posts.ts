@@ -1,5 +1,5 @@
 import express from 'express'
-import { authenticate } from '../middleware/auth'
+import { authenticate, AuthRequest } from '../middleware/auth'
 import { getFeed, createPost, likePost, dislikePost, sharePost, savePost, getUserPosts, deletePost, archivePost, hidePost, reportPost, pinPost, hideFromProfile, toggleComments, getUserReels, getSavedPosts, getTaggedPosts, getPost, updatePost } from '../controllers/postController'
 import { addComment, getComments, likeComment } from '../controllers/commentController'
 
@@ -7,19 +7,21 @@ const router = express.Router()
 
 router.get('/feed', authenticate, getFeed)
 router.get('/user/:userId', authenticate, getUserPosts)
-router.get('/user-posts', authenticate, (req, res, next) => {
+router.get('/user-posts', authenticate, (req: AuthRequest, res, next) => {
   // Redirect to user endpoint with current user ID
-  req.params.userId = req.user._id.toString()
+  if (req.user?._id) {
+    req.params.userId = req.user._id.toString()
+  }
   return getUserPosts(req as any, res, next)
 })
-router.get('/reels', authenticate, (req, res, next) => {
-  const userId = req.query.userId as string || req.user._id.toString()
+router.get('/reels', authenticate, (req: AuthRequest, res, next) => {
+  const userId = (req.query.userId as string) || req.user?._id?.toString() || ''
   req.params.userId = userId
   return getUserReels(req as any, res, next)
 })
 router.get('/saved', authenticate, getSavedPosts)
-router.get('/tagged', authenticate, (req, res, next) => {
-  const userId = req.query.userId as string || req.user._id.toString()
+router.get('/tagged', authenticate, (req: AuthRequest, res, next) => {
+  const userId = (req.query.userId as string) || req.user?._id?.toString() || ''
   req.params.userId = userId
   return getTaggedPosts(req as any, res, next)
 })

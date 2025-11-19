@@ -323,7 +323,6 @@ export default function FullScreenMap() {
         overscrollBehavior: 'none',
         position: 'fixed',
         width: '100vw',
-        height: '100vh',
         height: '100dvh',
         minWidth: isFullHD ? '1920px' as any : undefined,
         minHeight: isFullHD ? '1080px' as any : undefined,

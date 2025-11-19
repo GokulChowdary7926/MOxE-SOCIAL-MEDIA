@@ -132,7 +132,7 @@ export default function Reel({ reel, isActive }: ReelProps) {
       <div className="absolute top-4 right-4 z-20">
         <ReelMenu 
           reelId={reel._id}
-          authorId={reel.author._id || (reel.author as any)._id}
+          authorId={(reel.author as any)?._id || (reel.author as any)?.id || ''}
           onReelDeleted={() => {
             window.location.reload()
           }}

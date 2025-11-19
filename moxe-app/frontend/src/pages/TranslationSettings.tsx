@@ -54,8 +54,10 @@ export default function TranslationSettings() {
           <button
             onClick={() => navigate('/settings')}
             className="text-text-gray hover:text-white transition-colors"
+            title="Close"
+            aria-label="Close translation settings"
           >
-            <i className="fas fa-times text-xl"></i>
+            <i className="fas fa-times text-xl" aria-hidden="true"></i>
           </button>
         </div>
         <p className="text-sm text-text-gray mb-4">
@@ -64,11 +66,14 @@ export default function TranslationSettings() {
 
         <div className="space-y-4">
           <div>
-            <label className="block text-sm mb-2">Preferred Language:</label>
+            <label htmlFor="preferred-language" className="block text-sm mb-2">Preferred Language:</label>
             <select
+              id="preferred-language"
               value={translationSettings.preferredLanguage}
               onChange={(e) => setTranslationSettings({ ...translationSettings, preferredLanguage: e.target.value })}
               className="w-full bg-light-gray border-none rounded-lg px-4 py-2 text-white"
+              title="Preferred Language"
+              aria-label="Preferred Language"
             >
               <option value="auto">Auto-detect</option>
               <option value="en">English</option>
@@ -87,13 +92,16 @@ export default function TranslationSettings() {
           </div>
 
           <div className="flex items-center justify-between">
-            <span className="text-sm">Auto-translate messages</span>
-            <label className="relative inline-block w-12 h-6">
+            <label htmlFor="auto-translate" className="text-sm">Auto-translate messages</label>
+            <label htmlFor="auto-translate" className="relative inline-block w-12 h-6 cursor-pointer">
               <input
+                id="auto-translate"
                 type="checkbox"
                 className="opacity-0 w-0 h-0"
                 checked={translationSettings.autoTranslate}
                 onChange={(e) => setTranslationSettings({ ...translationSettings, autoTranslate: e.target.checked })}
+                title="Auto-translate messages"
+                aria-label="Auto-translate messages"
               />
               <span className={`absolute cursor-pointer top-0 left-0 right-0 bottom-0 rounded-full transition-colors before:absolute before:content-[''] before:h-4 before:w-4 before:left-1 before:bottom-1 before:bg-white before:rounded-full before:transition-transform ${
                 translationSettings.autoTranslate ? 'bg-primary before:translate-x-6' : 'bg-light-gray'
@@ -102,13 +110,16 @@ export default function TranslationSettings() {
           </div>
 
           <div className="flex items-center justify-between">
-            <span className="text-sm">Show original text</span>
-            <label className="relative inline-block w-12 h-6">
+            <label htmlFor="show-original" className="text-sm">Show original text</label>
+            <label htmlFor="show-original" className="relative inline-block w-12 h-6 cursor-pointer">
               <input
+                id="show-original"
                 type="checkbox"
                 className="opacity-0 w-0 h-0"
                 checked={translationSettings.showOriginal}
                 onChange={(e) => setTranslationSettings({ ...translationSettings, showOriginal: e.target.checked })}
+                title="Show original text"
+                aria-label="Show original text"
               />
               <span className={`absolute cursor-pointer top-0 left-0 right-0 bottom-0 rounded-full transition-colors before:absolute before:content-[''] before:h-4 before:w-4 before:left-1 before:bottom-1 before:bg-white before:rounded-full before:transition-transform ${
                 translationSettings.showOriginal ? 'bg-primary before:translate-x-6' : 'bg-light-gray'

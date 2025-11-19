@@ -3,6 +3,7 @@ import { AuthRequest } from '../middleware/auth'
 import Post from '../models/Post'
 import User from '../models/User'
 import mongoose from 'mongoose'
+import feedRankingAlgorithm from '../services/algorithms/feedRankingAlgorithm'
 
 export const getFeed = async (req: AuthRequest, res: Response) => {
   try {
@@ -189,6 +190,33 @@ export const getFeed = async (req: AuthRequest, res: Response) => {
       console.error('Filter posts error:', filterError)
       // If filtering fails, just use original posts
       finalPosts = posts
+    }
+
+    // Use advanced feed ranking algorithm if requested
+    const useAlgorithm = req.query.algorithm === 'true' || req.query.algorithm === '1'
+    
+    if (useAlgorithm) {
+      try {
+        const page = parseInt(req.query.page as string) || 1
+        const limit = parseInt(req.query.limit as string) || 20
+        const contentType = (req.query.contentType as string) || 'all'
+        
+        const feedResult = await feedRankingAlgorithm.generateFeed(req.user._id, {
+          page,
+          limit,
+          contentType: contentType as any,
+        })
+        
+        return res.json({
+          posts: feedResult.posts,
+          hasMore: feedResult.hasMore,
+          nextPage: feedResult.nextPage,
+          algorithmVersion: feedResult.algorithmVersion,
+        })
+      } catch (algorithmError: any) {
+        console.error('Algorithm feed error:', algorithmError)
+        // Fall through to simple ranking
+      }
     }
 
     // Rank posts using a simple scoring function
@@ -767,14 +795,14 @@ export const toggleComments = async (req: AuthRequest, res: Response) => {
       return res.status(403).json({ message: 'You can only toggle comments on your own posts' })
     }
 
-    if (!post.privacy) {
-      post.privacy = {} as any
-    }
-    post.privacy.allowComments = !post.privacy.allowComments
+    // Store comment state in a custom field or use visibility.except
+    // For now, we'll use a workaround by storing in a metadata field
+    const allowComments = (post as any).allowComments !== false
+    ;(post as any).allowComments = !allowComments
     await post.save()
     res.json({ 
-      message: `Comments ${post.privacy.allowComments ? 'enabled' : 'disabled'}`,
-      allowComments: post.privacy.allowComments
+      message: `Comments ${!allowComments ? 'enabled' : 'disabled'}`,
+      allowComments: !allowComments
     })
   } catch (error: any) {
     res.status(500).json({ message: error.message })

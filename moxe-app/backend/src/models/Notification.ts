@@ -8,7 +8,7 @@ export interface INotification extends Document {
   comment?: mongoose.Types.ObjectId
   message?: mongoose.Types.ObjectId
   story?: mongoose.Types.ObjectId
-  message?: string
+  text?: string
   isRead: boolean
   createdAt: Date
 }
@@ -26,7 +26,7 @@ const NotificationSchema = new Schema<INotification>(
     comment: { type: Schema.Types.ObjectId, ref: 'Comment' },
     message: { type: Schema.Types.ObjectId, ref: 'Message' },
     story: { type: Schema.Types.ObjectId, ref: 'Story' },
-    message: { type: String },
+    text: { type: String },
     isRead: { type: Boolean, default: false },
   },
   {

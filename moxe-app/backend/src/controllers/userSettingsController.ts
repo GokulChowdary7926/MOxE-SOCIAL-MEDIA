@@ -13,42 +13,33 @@ export const getUserSettings = async (req: AuthRequest, res: Response) => {
 
     res.json({
       email: user.email,
-      privacy: user.settings?.privacy || {},
+      privacy: user.privacy || {},
       contentSettings: user.settings?.contentSettings || {},
       notifications: {
-        push: user.settings?.notifications?.push || {
-          enabled: true,
-          likes: true,
-          comments: true,
-          follows: true,
-          mentions: true,
-          messages: true,
-          stories: true,
-          live: true,
-        },
-        email: user.settings?.notifications?.email || {
-          enabled: true,
-          weeklyDigest: true,
-          securityAlerts: true,
-          productUpdates: false,
-        },
-        inApp: user.settings?.notifications?.inApp || {
-          enabled: true,
-          sound: true,
-          vibration: true,
-        },
-        quietHours: user.settings?.notifications?.quietHours || {
-          enabled: false,
-          start: '22:00',
-          end: '07:00',
-        },
-        grouping: user.settings?.notifications?.grouping || {
-          byType: true,
-        },
+        pushNotifications: user.settings?.notifications?.pushNotifications ?? true,
+        emailNotifications: user.settings?.notifications?.emailNotifications ?? true,
       },
-      security: user.settings?.security || {},
-      accessibility: user.settings?.accessibility || {},
-      languageRegion: user.settings?.languageRegion || {},
+      nearbyMessaging: user.settings?.nearbyMessaging || {
+        radius: 1000,
+        anonymousMode: false,
+      },
+      sosProtection: user.settings?.sosProtection || {
+        enableVoiceDetection: false,
+        autoSendOnDistress: false,
+        backgroundMonitoring: false,
+      },
+      proximityAlerts: user.settings?.proximityAlerts || {
+        enabled: false,
+      },
+      translation: user.settings?.translation || {
+        preferredLanguage: 'en',
+        autoTranslate: false,
+        showOriginal: true,
+      },
+      general: user.settings?.general || {
+        dataSharing: true,
+        adPersonalization: true,
+      },
     })
   } catch (error: any) {
     res.status(500).json({ message: error.message })
@@ -57,7 +48,7 @@ export const getUserSettings = async (req: AuthRequest, res: Response) => {
 
 export const updateUserSettings = async (req: AuthRequest, res: Response) => {
   try {
-    const { email, privacy, notifications, security } = req.body
+    const { email, privacy, notifications, nearbyMessaging, sosProtection, proximityAlerts, translation, general } = req.body
     const user = await User.findById(req.user._id)
     
     if (!user) {
@@ -73,65 +64,103 @@ export const updateUserSettings = async (req: AuthRequest, res: Response) => {
       user.email = email
     }
 
-    // Update privacy settings
+    // Update privacy settings (these are on the user object, not settings)
     if (privacy) {
-      if (!user.settings.privacy) {
-        user.settings.privacy = {} as any
+      if (privacy.invisibleMode !== undefined) user.privacy.invisibleMode = privacy.invisibleMode
+      if (privacy.hideOnlineStatus !== undefined) user.privacy.hideOnlineStatus = privacy.hideOnlineStatus
+      if (privacy.screenshotProtection !== undefined) user.privacy.screenshotProtection = privacy.screenshotProtection
+      if (privacy.profileVisitTracking !== undefined) user.privacy.profileVisitTracking = privacy.profileVisitTracking
+    }
+
+    // Update notifications
+    if (notifications) {
+      if (!user.settings) user.settings = {} as any
+      if (!user.settings!.notifications) {
+        user.settings!.notifications = {} as any
       }
-      user.settings.privacy = { ...user.settings.privacy, ...privacy }
+      if (notifications.pushNotifications !== undefined) {
+        user.settings!.notifications!.pushNotifications = notifications.pushNotifications
+      }
+      if (notifications.emailNotifications !== undefined) {
+        user.settings!.notifications!.emailNotifications = notifications.emailNotifications
+      }
+    }
+
+    // Initialize settings if not exists
+    if (!user.settings) {
+      user.settings = {} as any
+    }
+
+    // Update nearbyMessaging
+    if (nearbyMessaging) {
+      if (!user.settings!.nearbyMessaging) {
+        user.settings!.nearbyMessaging = {} as any
+      }
+      user.settings!.nearbyMessaging = { ...user.settings!.nearbyMessaging, ...nearbyMessaging }
+    }
+
+    // Update sosProtection
+    if (sosProtection) {
+      if (!user.settings!.sosProtection) {
+        user.settings!.sosProtection = {} as any
+      }
+      user.settings!.sosProtection = { ...user.settings!.sosProtection, ...sosProtection }
+    }
+
+    // Update proximityAlerts
+    if (proximityAlerts) {
+      if (!user.settings!.proximityAlerts) {
+        user.settings!.proximityAlerts = {} as any
+      }
+      user.settings!.proximityAlerts = { ...user.settings!.proximityAlerts, ...proximityAlerts }
+    }
+
+    // Update translation
+    if (translation) {
+      if (!user.settings!.translation) {
+        user.settings!.translation = {} as any
+      }
+      user.settings!.translation = { ...user.settings!.translation, ...translation }
+    }
+
+    // Update general
+    if (general) {
+      if (!user.settings!.general) {
+        user.settings!.general = {} as any
+      }
+      user.settings!.general = { ...user.settings!.general, ...general }
     }
 
     // Update contentSettings (defaults for posts/reels/stories/live)
     if (req.body.contentSettings) {
-      if (!user.settings.contentSettings) {
-        user.settings.contentSettings = {} as any
+      if (!user.settings!.contentSettings) {
+        user.settings!.contentSettings = {} as any
       }
       const incoming = req.body.contentSettings
-      user.settings.contentSettings = { ...user.settings.contentSettings, ...incoming }
       if (incoming.posts) {
-        user.settings.contentSettings.posts = { ...(user.settings.contentSettings.posts || {}), ...incoming.posts }
+        if (!user.settings!.contentSettings!.posts) {
+          user.settings!.contentSettings!.posts = {} as any
+        }
+        user.settings!.contentSettings!.posts = { ...user.settings!.contentSettings!.posts, ...incoming.posts }
       }
       if (incoming.reels) {
-        user.settings.contentSettings.reels = { ...(user.settings.contentSettings.reels || {}), ...incoming.reels }
+        if (!user.settings!.contentSettings!.reels) {
+          user.settings!.contentSettings!.reels = {} as any
+        }
+        user.settings!.contentSettings!.reels = { ...user.settings!.contentSettings!.reels, ...incoming.reels }
       }
       if (incoming.stories) {
-        user.settings.contentSettings.stories = { ...(user.settings.contentSettings.stories || {}), ...incoming.stories }
+        if (!user.settings!.contentSettings!.stories) {
+          user.settings!.contentSettings!.stories = {} as any
+        }
+        user.settings!.contentSettings!.stories = { ...user.settings!.contentSettings!.stories, ...incoming.stories }
       }
       if (incoming.live) {
-        user.settings.contentSettings.live = { ...(user.settings.contentSettings.live || {}), ...incoming.live }
+        if (!user.settings!.contentSettings!.live) {
+          user.settings!.contentSettings!.live = {} as any
+        }
+        user.settings!.contentSettings!.live = { ...user.settings!.contentSettings!.live, ...incoming.live }
       }
-    }
-
-    // Update notification settings
-    if (notifications) {
-      if (!user.settings.notifications) {
-        user.settings.notifications = {} as any
-      }
-      // Merge nested structures safely
-      user.settings.notifications = { ...user.settings.notifications, ...notifications }
-      if (notifications.push) {
-        user.settings.notifications.push = { ...(user.settings.notifications.push || {}), ...notifications.push }
-      }
-      if (notifications.email) {
-        user.settings.notifications.email = { ...(user.settings.notifications.email || {}), ...notifications.email }
-      }
-      if (notifications.inApp) {
-        user.settings.notifications.inApp = { ...(user.settings.notifications.inApp || {}), ...notifications.inApp }
-      }
-      if (notifications.quietHours) {
-        user.settings.notifications.quietHours = { ...(user.settings.notifications.quietHours || {}), ...notifications.quietHours }
-      }
-      if (notifications.grouping) {
-        user.settings.notifications.grouping = { ...(user.settings.notifications.grouping || {}), ...notifications.grouping }
-      }
-    }
-
-    // Update security settings
-    if (security) {
-      if (!user.settings.security) {
-        user.settings.security = {} as any
-      }
-      user.settings.security = { ...user.settings.security, ...security }
     }
 
     await user.save()
@@ -181,7 +210,6 @@ export const deactivateAccount = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ message: 'User not found' })
     }
 
-    user.isActive = false
     user.deactivatedAt = new Date()
     await user.save()
 

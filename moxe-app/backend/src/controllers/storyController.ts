@@ -3,6 +3,7 @@ import { AuthRequest } from '../middleware/auth'
 import Story from '../models/Story'
 import User from '../models/User'
 import Post from '../models/Post'
+import storyManager from '../services/algorithms/storyManager'
 
 export const createStory = async (req: AuthRequest, res: Response) => {
   try {
@@ -148,7 +149,7 @@ export const viewStory = async (req: AuthRequest, res: Response) => {
 export const sharePostToStory = async (req: AuthRequest, res: Response) => {
   try {
     const { postId } = req.params
-    const post = await Post.findById(postId).populate('author', 'profile').lean()
+    const post = await Post.findById(postId).populate('author', 'profile.username profile.fullName').lean()
     if (!post) {
       return res.status(404).json({ message: 'Post not found' })
     }
@@ -164,7 +165,8 @@ export const sharePostToStory = async (req: AuthRequest, res: Response) => {
     }
     const expiresAt = new Date()
     expiresAt.setHours(expiresAt.getHours() + 24)
-    const caption = `Shared from @${post.author?.profile?.username || post.author?.profile?.fullName || 'user'}`
+    const author = post.author as any
+    const caption = `Shared from @${author?.profile?.username || author?.profile?.fullName || 'user'}`
     const story = await Story.create({
       author: req.user._id,
       media,

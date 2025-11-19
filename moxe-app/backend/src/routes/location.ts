@@ -1,5 +1,5 @@
 import express from 'express'
-import { authenticate } from '../middleware/auth'
+import { authenticate, AuthRequest } from '../middleware/auth'
 import { updateLocation, getNearbyUsers, sendNearbyMessage } from '../controllers/locationController'
 import { 
   activateSOS, 
@@ -24,9 +24,9 @@ router.post('/emergency-contacts', authenticate, addEmergencyContact)
 router.get('/emergency-contacts', authenticate, getEmergencyContacts)
 
 // Places Library routes
-router.get('/saved-places', authenticate, async (req, res) => {
+router.get('/saved-places', authenticate, async (req: AuthRequest, res) => {
   try {
-    const user = await User.findById(req.user._id)
+    const user = await User.findById(req.user?._id)
     if (!user) return res.status(404).json({ message: 'User not found' })
     
     res.json({ places: user.savedPlaces || [] })
@@ -35,19 +35,21 @@ router.get('/saved-places', authenticate, async (req, res) => {
   }
 })
 
-router.post('/saved-places', authenticate, async (req, res) => {
+router.post('/saved-places', authenticate, async (req: AuthRequest, res) => {
   try {
-    const user = await User.findById(req.user._id)
+    const user = await User.findById(req.user?._id)
     if (!user) return res.status(404).json({ message: 'User not found' })
     
     if (!user.savedPlaces) {
       user.savedPlaces = []
     }
     
-    user.savedPlaces.push({
+    const newPlace = {
       ...req.body,
       savedAt: new Date(),
-    })
+    }
+    
+    user.savedPlaces.push(newPlace as any)
     
     await user.save()
     res.json({ message: 'Place saved successfully', place: user.savedPlaces[user.savedPlaces.length - 1] })
@@ -56,9 +58,9 @@ router.post('/saved-places', authenticate, async (req, res) => {
   }
 })
 
-router.delete('/saved-places/:placeId', authenticate, async (req, res) => {
+router.delete('/saved-places/:placeId', authenticate, async (req: AuthRequest, res) => {
   try {
-    const user = await User.findById(req.user._id)
+    const user = await User.findById(req.user?._id)
     if (!user) return res.status(404).json({ message: 'User not found' })
     
     if (!user.savedPlaces) {
@@ -67,7 +69,7 @@ router.delete('/saved-places/:placeId', authenticate, async (req, res) => {
     
     user.savedPlaces = user.savedPlaces.filter(
       (place: any) => place._id?.toString() !== req.params.placeId
-    )
+    ) as any
     
     await user.save()
     res.json({ message: 'Place deleted successfully' })

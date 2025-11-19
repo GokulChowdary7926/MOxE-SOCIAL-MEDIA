@@ -13,7 +13,8 @@ export default function BottomNav({ currentPath, onNavClick }: BottomNavProps) {
   ]
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-dark-gray border-t border-light-gray flex justify-around py-3 z-50">
+    <nav className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-[rgba(0,0,0,0.5)] backdrop-blur-[20px] -webkit-backdrop-blur-[20px] border-t border-[rgba(255,255,255,0.1)] px-4 py-3 z-50">
+      <div className="flex justify-around items-center">
       {navItems.map((item) => {
         const isActive = currentPath === item.path || (item.path === '/' && currentPath === '/')
         return (
@@ -29,6 +30,7 @@ export default function BottomNav({ currentPath, onNavClick }: BottomNavProps) {
           </button>
         )
       })}
+      </div>
     </nav>
   )
 }

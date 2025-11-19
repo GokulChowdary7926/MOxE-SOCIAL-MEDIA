@@ -188,6 +188,16 @@ export interface IUser extends Document {
   password?: string
   deactivatedAt?: Date
   deviceTokens?: string[]
+  metrics?: {
+    averageLikes?: number
+    averageComments?: number
+    peakEngagementHours?: number[]
+    contentQualityScore?: number
+    followersCount?: number
+    followingCount?: number
+    postsCount?: number
+    engagementRate?: number
+  }
   createdAt: Date
   lastActive: Date
 }
@@ -374,12 +384,25 @@ const UserSchema = new Schema<IUser>({
   password: { type: String },
   deactivatedAt: { type: Date },
   deviceTokens: [{ type: String }],
+  metrics: {
+    averageLikes: { type: Number, default: 0 },
+    averageComments: { type: Number, default: 0 },
+    peakEngagementHours: [Number],
+    contentQualityScore: { type: Number, default: 0.5 },
+    followersCount: { type: Number, default: 0, index: true },
+    followingCount: { type: Number, default: 0 },
+    postsCount: { type: Number, default: 0 },
+    engagementRate: { type: Number, default: 0 },
+  },
   createdAt: { type: Date, default: Date.now },
-  lastActive: { type: Date, default: Date.now },
+  lastActive: { type: Date, default: Date.now, index: true },
 })
 
 // Compound index for phone + accountType to allow multiple accounts per phone
 UserSchema.index({ phone: 1, accountType: 1 })
+// Indexes for discover and search
+UserSchema.index({ 'metrics.followersCount': -1, lastActive: -1 })
+UserSchema.index({ username: 'text', 'profile.fullName': 'text', 'profile.bio': 'text' })
 
 // Keep root username in sync with profile.username if one is present
 UserSchema.pre('save', function(next) {

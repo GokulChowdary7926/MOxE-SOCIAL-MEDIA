@@ -14,7 +14,7 @@ export default function Layout() {
     <div className="min-h-screen bg-dark text-text-light">
       <div className="max-w-md mx-auto bg-dark-gray min-h-screen relative">
         <Header />
-        <main className="pb-20">
+        <main className="pt-2 pb-20">
           <Outlet />
         </main>
         <BottomNav currentPath={location.pathname} onNavClick={handleNavClick} />

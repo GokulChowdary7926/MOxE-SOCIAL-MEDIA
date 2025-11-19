@@ -21,6 +21,11 @@ export interface IStory extends Document {
       }
       expiresAt: Date
       createdAt: Date
+      metrics?: {
+        completionRate?: number
+        replyCount?: number
+        forwardCount?: number
+      }
     }
 
     const StorySchema = new Schema<IStory>({
@@ -44,10 +49,16 @@ export interface IStory extends Document {
       },
       expiresAt: { type: Date, required: true, index: { expires: 0 } }, // TTL index
       createdAt: { type: Date, default: Date.now },
+      metrics: {
+        completionRate: { type: Number, default: 0 },
+        replyCount: { type: Number, default: 0 },
+        forwardCount: { type: Number, default: 0 },
+      },
     })
 
 // Auto-delete expired stories (run cleanup job)
 StorySchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 })
+StorySchema.index({ author: 1, expiresAt: -1, createdAt: -1 })
 
 export default mongoose.model<IStory>('Story', StorySchema)
 

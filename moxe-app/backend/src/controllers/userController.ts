@@ -1,7 +1,7 @@
-import { Response } from 'express'
-import { AuthRequest } from '../middleware/auth'
-import User from '../models/User'
 import { Request, Response } from 'express'
+import { AuthRequest } from '../middleware/auth'
+import mongoose from 'mongoose'
+import User from '../models/User'
 
 export const getProfile = async (req: AuthRequest, res: Response) => {
   try {
@@ -339,9 +339,9 @@ export const getSuggestions = async (req: AuthRequest, res: Response) => {
     // 1. Are not the current user
     // 2. Are not already being followed
     // 3. Have mutual connections (optional - can be enhanced)
-    const followingIds = user.following.map((id: any) => id.toString())
-    const blockedIds = user.blocked?.map((id: any) => id.toString()) || []
-    const excludedIds = [user._id.toString(), ...followingIds, ...blockedIds]
+    const followingIds = (user.following || []).map((id: any) => id.toString())
+    const blockedIds = (user.blockedUsers || []).map((id: any) => id.toString())
+    const excludedIds = [(user._id as mongoose.Types.ObjectId).toString(), ...followingIds, ...blockedIds]
 
     // Get suggestions based on:
     // - Users followed by people you follow (mutual connections)

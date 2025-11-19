@@ -163,7 +163,7 @@ export default function Profile() {
     <div className="min-h-screen bg-dark pb-20">
       {/* Top Navigation */}
       <div className="flex items-center justify-between p-4 bg-medium-gray">
-        <button onClick={() => navigate(-1)} className="text-white">
+        <button onClick={() => navigate(-1)} className="text-white" title="Go back">
           <i className="fas fa-arrow-left text-xl"></i>
         </button>
         <div className="flex items-center gap-3">

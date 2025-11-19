@@ -1,4 +1,5 @@
 import { Request, Response } from 'express'
+import { AuthRequest } from '../middleware/auth'
 import User from '../models/User'
 
 export const getPlans = async (_req: Request, res: Response) => {
@@ -56,10 +57,6 @@ export const cancel = async (req: Request, res: Response) => {
     res.status(500).json({ message: e.message })
   }
 }
-
-import { Response } from 'express'
-import { AuthRequest } from '../middleware/auth'
-import User from '../models/User'
 
 // Helper to calculate subscription period (28 days)
 const calculatePeriod = () => {

@@ -2,10 +2,11 @@ import { Response } from 'express'
 import { AuthRequest } from '../middleware/auth'
 import Post from '../models/Post'
 import User from '../models/User'
+import searchAlgorithm from '../services/algorithms/searchAlgorithm'
 
 export const searchAll = async (req: AuthRequest, res: Response) => {
   try {
-    const { q, type } = req.query
+    const { q, type, useAlgorithm } = req.query
     const query = (q as string)?.trim()
 
     if (!query || query.length < 2) {
@@ -13,7 +14,28 @@ export const searchAll = async (req: AuthRequest, res: Response) => {
         users: [],
         posts: [],
         hashtags: [],
+        locations: [],
       })
+    }
+
+    // Use advanced search algorithm if requested
+    if (useAlgorithm === 'true' || useAlgorithm === '1') {
+      try {
+        const page = parseInt(req.query.page as string) || 1
+        const limit = parseInt(req.query.limit as string) || 20
+        const searchType = (type as string) || 'all'
+
+        const results = await searchAlgorithm.search(req.user._id, query, {
+          type: searchType as any,
+          page,
+          limit,
+        })
+
+        return res.json(results)
+      } catch (algorithmError: any) {
+        console.error('Algorithm search error:', algorithmError)
+        // Fall through to simple search
+      }
     }
 
     const searchRegex = new RegExp(query, 'i')
@@ -21,6 +43,7 @@ export const searchAll = async (req: AuthRequest, res: Response) => {
       users: [],
       posts: [],
       hashtags: [],
+      locations: [],
     }
 
     // Search users

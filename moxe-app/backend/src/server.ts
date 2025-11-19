@@ -5,6 +5,7 @@ import cors from 'cors'
 import dotenv from 'dotenv'
 import connectDB from './config/database'
 import setupSocketIO from './services/socketService'
+import notificationEngine from './services/algorithms/notificationEngine'
 
 // Load environment variables
 dotenv.config()
@@ -42,6 +43,9 @@ const io = new Server(httpServer, {
 
 // Make io available to routes
 app.set('io', io)
+
+// Initialize notification engine with socket.io
+notificationEngine.setSocketIO(io)
 
 // Middleware
 app.use(cors({

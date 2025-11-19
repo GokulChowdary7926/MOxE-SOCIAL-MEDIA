@@ -106,7 +106,7 @@ export const createNotification = async (
       comment: data?.commentId,
       message: data?.messageId,
       story: data?.storyId,
-      message: data?.message,
+      text: data?.message,
       isRead: false,
     })
 

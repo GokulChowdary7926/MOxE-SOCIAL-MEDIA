@@ -31,7 +31,7 @@ export default function StoryViewer({ stories, initialIndex, onClose }: StoryVie
   const [currentMediaIndex, setCurrentMediaIndex] = useState(0)
   const [progress, setProgress] = useState(0)
   const [isPaused, setIsPaused] = useState(false)
-  const progressIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
 
   const currentStory = stories[currentStoryIndex]

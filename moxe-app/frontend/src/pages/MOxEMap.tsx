@@ -69,7 +69,7 @@ interface FriendLocation {
   accountType?: string
 }
 
-export default function SnapMap() {
+export default function MOxEMap() {
   const navigate = useNavigate()
   const { user } = useSelector((state: RootState) => state.auth)
   const { socket, isConnected } = useSocket()
@@ -323,13 +323,14 @@ export default function SnapMap() {
   const heatMapData = showHeatMap ? calculateHeatMap() : []
 
   return (
-    <div className="fixed inset-0 z-50 bg-black" style={{ touchAction: 'pan-x pan-y pinch-zoom' }}>
+    <div className="fixed inset-0 z-50 bg-black touch-pan-x touch-pan-y touch-pinch-zoom">
       {/* Header */}
       <div className="absolute top-0 left-0 right-0 z-10 bg-black/80 backdrop-blur-sm p-3 flex items-center justify-between safe-area-top">
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate('/map')}
             className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors"
+            title="Go back"
           >
             <i className="fas fa-arrow-left"></i>
           </button>
@@ -339,6 +340,7 @@ export default function SnapMap() {
           <button
             onClick={() => setShowPlacesLibrary(true)}
             className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors"
+            title="Places Library"
           >
             <i className="fas fa-bookmark"></i>
           </button>
@@ -347,6 +349,7 @@ export default function SnapMap() {
             className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
               locationSharing ? 'bg-primary' : 'bg-white/10'
             } text-white`}
+            title={locationSharing ? "Stop sharing location" : "Share location"}
           >
             <i className="fas fa-location-arrow"></i>
           </button>
@@ -491,6 +494,8 @@ export default function SnapMap() {
             onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
             placeholder="Search places..."
             className="flex-1 bg-transparent text-gray-900 outline-none"
+            title="Search places"
+            aria-label="Search places"
           />
           {searchQuery && (
             <button
@@ -499,6 +504,7 @@ export default function SnapMap() {
                 setSearchResults([])
               }}
               className="text-gray-500"
+              title="Clear search"
             >
               <i className="fas fa-times"></i>
             </button>
@@ -521,6 +527,7 @@ export default function SnapMap() {
               className={`w-12 h-12 rounded-xl flex items-center justify-center transition-colors ${
                 showHeatMap ? 'bg-primary' : 'bg-white/90 backdrop-blur-sm'
               }`}
+              title={showHeatMap ? "Hide heat map" : "Show heat map"}
             >
               <i className={`fas fa-fire ${showHeatMap ? 'text-white' : 'text-gray-700'}`}></i>
             </button>
@@ -536,6 +543,7 @@ export default function SnapMap() {
                 }
               }}
               className="w-12 h-12 rounded-xl bg-white/90 backdrop-blur-sm flex items-center justify-center"
+              title="Center on my location"
             >
               <i className="fas fa-crosshairs text-gray-700"></i>
             </button>
@@ -545,11 +553,14 @@ export default function SnapMap() {
 
         {/* Privacy Mode Selector */}
         <div className="bg-white/90 backdrop-blur-sm rounded-xl p-2 flex items-center gap-2">
-          <span className="text-xs text-gray-700 font-semibold">Show:</span>
+          <label htmlFor="privacy-mode" className="text-xs text-gray-700 font-semibold">Show:</label>
           <select
+            id="privacy-mode"
             value={privacyMode}
             onChange={(e) => setPrivacyMode(e.target.value as any)}
             className="flex-1 bg-transparent text-gray-900 text-sm outline-none"
+            title="Privacy mode"
+            aria-label="Privacy mode"
           >
             <option value="all">Everyone</option>
             <option value="friends">Friends Only</option>
@@ -576,6 +587,7 @@ export default function SnapMap() {
             <button
               onClick={() => setSelectedFriend(null)}
               className="text-gray-500"
+              title="Close"
             >
               <i className="fas fa-times"></i>
             </button>
@@ -589,6 +601,7 @@ export default function SnapMap() {
                 }
               }}
               className="w-full bg-primary text-white py-2 rounded-lg font-semibold flex items-center justify-center gap-2"
+              title="View stories"
             >
               <i className="fas fa-play"></i>
               <span>View {selectedFriend.storyCount} {selectedFriend.storyCount === 1 ? 'Story' : 'Stories'}</span>
